@@ -2,6 +2,8 @@
 
 這份文件整理目前開發脈絡，方便換電腦、開新對話或未來上 GitHub 後繼續開發。
 
+整體架構與分階段計畫請看 [`roadmap.md`](roadmap.md)。
+
 ## 專案目標
 
 建立一個《崩壞：星穹鐵道》角色傷害試算網站。第一版先支援大黑塔單次傷害計算，未來預計支援多角色、組隊試算、遺器最佳解分析與 GitHub Pages 部署。
@@ -119,10 +121,11 @@ data/
 2. 建立 GitHub repo：`hsr-damage-lab`。
 3. 初始化 git，commit 第一版並推送。
 4. 到 GitHub Pages 啟用 `main / root` 部署。
-5. 把資料從 `app.js` 拆到 `data/*.json`。
-6. 補大黑塔不同技能等級、光錐疊影、星魂與隊友 Buff。
-7. 加入可儲存/分享的 URL query 或 localStorage。
-8. 補簡單測試案例，用固定輸入比對預期輸出。
+5. 依照 [`roadmap.md`](roadmap.md) 建立專案內 `.codex/skills`。
+6. 把資料從 `app.js` 拆到 `data/*.json`。
+7. 補大黑塔不同技能等級、光錐疊影、星魂與隊友 Buff。
+8. 加入可儲存/分享的 URL query 或 localStorage。
+9. 補簡單測試案例，用固定輸入比對預期輸出。
 
 ## GitHub Pages
 

@@ -4,7 +4,7 @@
 
 線上網站：https://alex9810171.github.io/hsr-damage-lab/
 
-更多開發脈絡、公式假設與 TODO 請看 [`docs/project-notes.md`](docs/project-notes.md)。
+更多開發脈絡、公式假設與 TODO 請看 [`docs/project-notes.md`](docs/project-notes.md)，整體規劃請看 [`docs/roadmap.md`](docs/roadmap.md)。
 
 ## 專案結構
 
@@ -13,7 +13,8 @@ hsr-damage-lab/
 ├── index.html
 ├── README.md
 ├── docs/
-│   └── project-notes.md
+│   ├── project-notes.md
+│   └── roadmap.md
 └── assets/
     ├── css/
     │   └── styles.css
