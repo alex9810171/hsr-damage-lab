@@ -88,13 +88,24 @@
             <h2>遺器與詞條</h2>
           </div>
           <label class="wide">
-            <span>套裝效果</span>
-            <select id="relicSet">
+            <span>隧洞遺器</span>
+            <select id="cavernSet">
               <option value="none">不套用</option>
               <option value="scholar">識海迷墜的學者：暴率 8%、戰技/終結技增傷</option>
               <option value="ice">密林臥雪的獵人：冰傷 10%、終結技後暴傷 25%</option>
+              <option value="wind">晨昏交界的翔鷹：風傷 10%、終結技後行動提前</option>
+              <option value="valorous">風舉雲飛的勇烈：暴率 6%、條件終結技增傷</option>
+              <option value="warriorGoddess">女武神套裝：待核對</option>
+            </select>
+          </label>
+          <label class="wide">
+            <span>位面飾品</span>
+            <select id="planarSet">
+              <option value="none">不套用</option>
               <option value="izumo">出雲顯世與高天神國：攻擊 12%、同命途暴率 12%</option>
               <option value="rutilant">繁星競技場：暴率 8%、達 70% 時普攻/戰技增傷</option>
+              <option value="vonwacq">生命的翁瓦克：能量恢復、行動提前</option>
+              <option value="lushaka">沉陸海域露莎卡：能量恢復、1號位攻擊</option>
             </select>
           </label>
 
@@ -200,6 +211,11 @@
             <div class="skill-breakdown">
               <h2>技能拆解</h2>
               <div id="skillBreakdown"></div>
+            </div>
+
+            <div class="factor-panel">
+              <h2>乘區係數</h2>
+              <div id="factorSummary" class="factor-list"></div>
             </div>
 
             <div class="debug-panel">

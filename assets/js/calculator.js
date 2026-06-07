@@ -45,6 +45,7 @@ export function calculateDamage(data, inputs, overrides = {}) {
     crit: sum("crit"),
     expected: sum("expected"),
     multipliers,
+    factorSummary: buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult),
     critMult,
     expectedCritMult,
     traceDmg,
@@ -56,8 +57,11 @@ export function calculateDamage(data, inputs, overrides = {}) {
 export function readState(data, inputs, overrides = {}) {
   const { character, lightCones, relicSets, statValues, teams } = data;
   const { baseStats, mainStatValues, rollValues } = statValues;
-  const relicKey = overrides.relicSet ?? inputs.relicSet;
-  const set = relicSets[relicKey] ?? relicSets.none;
+  const cavernSetKey = overrides.cavernSet ?? inputs.cavernSet;
+  const planarSetKey = overrides.planarSet ?? inputs.planarSet;
+  const cavernSet = relicSets[cavernSetKey] ?? relicSets.none;
+  const planarSet = relicSets[planarSetKey] ?? relicSets.none;
+  const combinedSet = combineRelicSets(cavernSet, planarSet);
   const lightConeKey = overrides.lightCone ?? inputs.lightCone;
   const lightCone = lightCones[lightConeKey] ?? lightCones.none;
   const teamKey = overrides.teamPreset ?? inputs.teamPreset;
@@ -85,7 +89,7 @@ export function readState(data, inputs, overrides = {}) {
     main: sumPart(mainParts, "atkPercent"),
     trace: character.traceStats.atkPercent,
     team: Number(overrides.teamAtkBuff ?? inputs.teamAtkBuff) + teamAutoBuffs.atkPercent,
-    relic: set.atkPercent ?? 0,
+    relic: combinedSet.atkPercent ?? 0,
     rolls: atkFromRolls,
     ultimate: afterUltimate ? ultimateAtkBuff : 0,
   };
@@ -95,7 +99,7 @@ export function readState(data, inputs, overrides = {}) {
     base: baseStats.critRate,
     main: sumPart(mainParts, "critRate"),
     team: Number(overrides.teamCrBuff ?? inputs.teamCrBuff) + teamAutoBuffs.critRate,
-    relic: relicKey === "izumo" ? (twoErudition ? set.critRate ?? 0 : 0) : set.critRate ?? 0,
+    relic: relicCritRate(cavernSetKey, planarSetKey, combinedSet, twoErudition),
     rolls: Number(overrides.crRolls ?? inputs.crRolls) * rollValues.crRolls,
   };
   const critRateRaw = sumObject(critRateParts);
@@ -107,8 +111,8 @@ export function readState(data, inputs, overrides = {}) {
     relic: 0,
     rolls: Number(overrides.cdRolls ?? inputs.cdRolls) * rollValues.cdRolls,
   };
-  if (set.ultCritDamage && (skill.id === "ultimate" || afterUltimate)) {
-    critDamageParts.relic = set.ultCritDamage;
+  if (combinedSet.ultCritDamage && (skill.id === "ultimate" || afterUltimate)) {
+    critDamageParts.relic = combinedSet.ultCritDamage;
   }
   const critDamage = sumObject(critDamageParts);
 
@@ -116,13 +120,13 @@ export function readState(data, inputs, overrides = {}) {
     main: sumPart(mainParts, "dmgBonus"),
     team: Number(overrides.teamDmgBuff ?? inputs.teamDmgBuff) + teamAutoBuffs.dmgBonus,
     trace: character.traceStats.iceDmg,
-    relicBase: set.dmgBonus ?? 0,
-    relicSkill: skill.type === "skill" ? set.skillDmg ?? 0 : 0,
-    relicUltimate: skill.type === "ultimate" ? set.ultDmg ?? 0 : 0,
-    relicAfterUltimateSkill: afterUltimate && skill.type === "skill" ? set.nextSkillDmgAfterUlt ?? 0 : 0,
+    relicBase: combinedSet.dmgBonus ?? 0,
+    relicSkill: skill.type === "skill" ? combinedSet.skillDmg ?? 0 : 0,
+    relicUltimate: skill.type === "ultimate" ? combinedSet.ultDmg ?? 0 : 0,
+    relicAfterUltimateSkill: afterUltimate && skill.type === "skill" ? combinedSet.nextSkillDmgAfterUlt ?? 0 : 0,
     relicConditional:
-      (skill.type === "basic" || skill.type === "skill") && set.basicSkillDmgWhen70Cr && critRateRaw >= 70
-        ? set.basicSkillDmgWhen70Cr
+      (skill.type === "basic" || skill.type === "skill") && combinedSet.basicSkillDmgWhen70Cr && critRateRaw >= 70
+        ? combinedSet.basicSkillDmgWhen70Cr
         : 0,
   };
   const dmgBonus = sumObject(dmgParts);
@@ -130,8 +134,11 @@ export function readState(data, inputs, overrides = {}) {
 
   return {
     skill,
-    set,
-    relicKey,
+    cavernSet,
+    planarSet,
+    combinedSet,
+    cavernSetKey,
+    planarSetKey,
     lightCone,
     team,
     teamAutoBuffs,
@@ -230,6 +237,61 @@ function emptyBuffs() {
     defReduction: 0,
     sources: [],
   };
+}
+
+function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult) {
+  const totalAbility = hits.reduce((total, hit) => total + percent(hit.ability) * hit.targets * hit.repeats, 0);
+  return [
+    {
+      label: "攻擊區",
+      value: state.baseAtk > 0 ? state.finalAtk / state.baseAtk : 0,
+      formula: "當前攻擊力 / (角色 + 光錐基礎攻擊力)",
+      detail: `${state.finalAtk.toFixed(1)} / ${state.baseAtk.toFixed(1)}`,
+    },
+    {
+      label: "倍率區",
+      value: totalAbility,
+      formula: "Σ(技能倍率 x 目標數 x 次數)",
+      detail: hits.map((hit) => `${hit.ability.toFixed(1)}% x ${hit.targets} x ${hit.repeats}`).join(" + "),
+    },
+    {
+      label: "增傷區",
+      value: dmgBoost,
+      formula: "100% + 增傷幅度",
+      detail: `100% + ${(state.dmgBonus + (state.skill.enhanced && state.fullInterpretationTrace && state.interpretationStacks >= 42 ? 50 : 0)).toFixed(2)}%`,
+    },
+    {
+      label: "暴擊期望",
+      value: expectedCritMult,
+      formula: "100% + 暴率 x 暴傷",
+      detail: `100% + ${state.critRate.toFixed(2)}% x ${state.critDamage.toFixed(2)}%`,
+    },
+    { label: "防禦區", value: multipliers.defMult, formula: "防禦乘區", detail: "" },
+    { label: "抗性區", value: multipliers.resMult, formula: "100% - (抗性 - 抗穿)", detail: "" },
+    { label: "易傷區", value: multipliers.vulnMult, formula: "100% + 易傷", detail: "" },
+    { label: "我方減傷區", value: multipliers.weakenMult, formula: "100% - 我方傷害降低", detail: "" },
+    { label: "敵方減傷區", value: multipliers.mitigationMult, formula: "100% - 敵方減傷", detail: "" },
+    { label: "弱點區", value: multipliers.brokenMult, formula: "擊破 1 / 未擊破 0.9", detail: "" },
+  ];
+}
+
+function combineRelicSets(...sets) {
+  return sets.reduce((combined, set) => {
+    Object.entries(set ?? {}).forEach(([key, value]) => {
+      if (typeof value === "number") {
+        combined[key] = (combined[key] ?? 0) + value;
+      }
+    });
+    return combined;
+  }, {});
+}
+
+function relicCritRate(cavernSetKey, planarSetKey, combinedSet, twoErudition) {
+  let critRate = combinedSet.critRate ?? 0;
+  if (planarSetKey === "izumo" && !twoErudition) {
+    critRate -= 12;
+  }
+  return critRate;
 }
 
 function sumPart(parts, key) {

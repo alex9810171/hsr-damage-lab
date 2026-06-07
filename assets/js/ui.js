@@ -11,7 +11,8 @@ export function createUI(data) {
     "feetMainStat",
     "sphereMainStat",
     "ropeMainStat",
-    "relicSet",
+    "cavernSet",
+    "planarSet",
     "atkRolls",
     "crRolls",
     "cdRolls",
@@ -52,6 +53,7 @@ export function createUI(data) {
     "finalAtk",
     "formulaDebug",
     "copyDebugButton",
+    "factorSummary",
   ];
   const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
@@ -165,7 +167,8 @@ export function createUI(data) {
     el.feetMainStat.value = "atkPercent";
     el.sphereMainStat.value = "iceDmg";
     el.ropeMainStat.value = "atkPercent";
-    el.relicSet.value = "scholar";
+    el.cavernSet.value = "scholar";
+    el.planarSet.value = "izumo";
     el.skillSelect.value = "enhanced";
     applyTeamToFields();
     el.afterUltimate.checked = true;
@@ -188,6 +191,7 @@ export function createUI(data) {
     el.normalDamageResult.textContent = fmt(result.normal);
     el.finalAtk.textContent = fmt(result.state.finalAtk);
     renderBreakdown(result);
+    renderFactorSummary(result);
     renderOptimization(result);
     el.formulaDebug.textContent = renderFormulaDebug(result);
   }
@@ -232,6 +236,22 @@ export function createUI(data) {
     document.getElementById("marginalTable").innerHTML = candidates
       .slice(0, 4)
       .map((item) => `<div class="mini-row"><span>${item.label}</span><strong>+${item.gain.toFixed(2)}%</strong></div>`)
+      .join("");
+  }
+
+  function renderFactorSummary(result) {
+    el.factorSummary.innerHTML = result.factorSummary
+      .map(
+        (factor) => `
+          <div class="factor-row">
+            <div>
+              <strong>${factor.label}</strong>
+              <span>${factor.formula}${factor.detail ? `：${factor.detail}` : ""}</span>
+            </div>
+            <strong>${factor.value.toFixed(4)}</strong>
+          </div>
+        `,
+      )
       .join("");
   }
 

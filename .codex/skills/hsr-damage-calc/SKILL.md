@@ -77,6 +77,7 @@ Do not expose player-facing RES PEN as normal equipment unless a character/eidol
 ## Relic Checklist
 
 Do not omit 2-piece effects.
+Model cavern relics and planar ornaments as separate slots; both can trigger at the same time and must be combined in calculation.
 
 - Scholar Lost in Erudition: CRIT Rate +8%; Skill/Ultimate DMG +20%; after Ultimate, next Skill DMG +25%.
 - Hunter of Glacial Forest: Ice DMG +10%; after Ultimate, CRIT DMG +25%.
