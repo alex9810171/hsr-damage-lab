@@ -252,16 +252,58 @@ export function createUI(data) {
     el.factorSummary.innerHTML = result.factorSummary
       .map(
         (factor) => `
-          <div class="factor-row">
-            <div>
-              <strong>${factor.label}</strong>
-              <span>${factor.formula}${factor.detail ? `：${factor.detail}` : ""}</span>
+          <details class="factor-row">
+            <summary>
+              <span class="factor-title">${escapeHtml(factor.label)}</span>
+              <strong>${formatFactorValue(factor.value)}</strong>
+            </summary>
+            <div class="factor-body">
+              <p>${escapeHtml(factor.formula)}${factor.detail ? `：${escapeHtml(factor.detail)}` : ""}</p>
+              ${renderFactorParts(factor.parts)}
             </div>
-            <strong>${factor.value.toFixed(4)}</strong>
-          </div>
+          </details>
         `,
       )
       .join("");
+  }
+
+  function renderFactorParts(parts = []) {
+    if (!parts.length) return "";
+    return `
+      <ul class="factor-parts">
+        ${parts
+          .map(
+            (item) => `
+              <li>
+                <span>${escapeHtml(item.label)}</span>
+                <strong>${formatPartValue(item)}</strong>
+                ${item.note ? `<em>${escapeHtml(item.note)}</em>` : ""}
+              </li>
+            `,
+          )
+          .join("")}
+      </ul>
+    `;
+  }
+
+  function formatFactorValue(value) {
+    return Number(value || 0).toFixed(4);
+  }
+
+  function formatPartValue(item) {
+    const value = Number(item.value || 0);
+    if (item.unit === "%") return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+    if (item.unit === "x") return `${value.toFixed(4)}x`;
+    return value.toFixed(1);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   async function copyDebugText() {
