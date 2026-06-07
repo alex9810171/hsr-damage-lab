@@ -24,6 +24,7 @@ export function createUI(data) {
     "afterUltimate",
     "twoErudition",
     "fullInterpretationTrace",
+    "hertaE1",
     "targetBroken",
     "teammate1",
     "teammate1Eidolon",
@@ -49,6 +50,8 @@ export function createUI(data) {
     "expectedDamage",
     "critDamageResult",
     "normalDamageResult",
+    "damageFactorTotal",
+    "fullExpectedMultiplier",
     "finalAtk",
     "formulaDebug",
     "copyDebugButton",
@@ -65,6 +68,7 @@ export function createUI(data) {
     }
     populateSkills();
     populateTeams();
+    bindTeamFieldSync();
     document.querySelectorAll("input, select").forEach((input) => {
       input.addEventListener("input", calculate);
       input.addEventListener("change", calculate);
@@ -107,6 +111,10 @@ export function createUI(data) {
   function populateTeams() {
     if (!el.teamPreset) return;
     el.teamPreset.replaceChildren();
+    const customOption = document.createElement("option");
+    customOption.value = "custom";
+    customOption.textContent = "自訂隊伍";
+    el.teamPreset.append(customOption);
     Object.entries(data.teams).forEach(([id, team]) => {
       const option = document.createElement("option");
       option.value = id;
@@ -118,6 +126,19 @@ export function createUI(data) {
     el.teamPreset.addEventListener("change", () => {
       applyTeamToFields();
       calculate();
+    });
+  }
+
+  function bindTeamFieldSync() {
+    teamFieldIds().forEach((id) => {
+      const markCustom = () => {
+        if (el.teamPreset?.value !== "custom") {
+          setValue("teamPreset", "custom");
+        }
+        calculate();
+      };
+      el[id]?.addEventListener("input", markCustom);
+      el[id]?.addEventListener("change", markCustom);
     });
   }
 
@@ -182,6 +203,7 @@ export function createUI(data) {
     setChecked("afterUltimate", true);
     setChecked("twoErudition", true);
     setChecked("fullInterpretationTrace", true);
+    setChecked("hertaE1", false);
     setChecked("targetBroken", false);
     calculate();
   }
@@ -197,14 +219,25 @@ export function createUI(data) {
     setText("expectedDamage", fmt(result.expected));
     setText("critDamageResult", fmt(result.crit));
     setText("normalDamageResult", fmt(result.normal));
+    setText("damageFactorTotal", formatFactorCardValue(findFactor(result, "傷害乘區總值")));
+    setText("fullExpectedMultiplier", formatFactorCardValue(findFactor(result, "完整期望倍率")));
     setText("finalAtk", fmt(result.state.finalAtk));
     renderBreakdown(result);
     renderFactorSummary(result);
-    renderOptimization(result);
+    renderMarginalReference(result);
     setText("formulaDebug", renderFormulaDebug(result));
   }
 
   function renderBreakdown(result) {
+    const distributionHtml = result.targetDistribution?.length
+      ? `
+        <div class="target-distribution">
+          ${result.targetDistribution
+            .map((item) => `<span>${escapeHtml(item.label)}：${item.multiplier.toFixed(0)}%</span>`)
+            .join("")}
+        </div>
+      `
+      : "";
     const html = result.hits
       .map(
         (hit) => `
@@ -218,10 +251,10 @@ export function createUI(data) {
         `,
       )
       .join("");
-    document.getElementById("skillBreakdown").innerHTML = `<div class="breakdown-list">${html}</div>`;
+    document.getElementById("skillBreakdown").innerHTML = `${distributionHtml}<div class="breakdown-list">${html}</div>`;
   }
 
-  function renderOptimization(baseResult) {
+  function renderMarginalReference(baseResult) {
     const current = readInputs();
     const candidates = [
       ["攻擊% 詞條 +1", { atkRolls: Number(current.atkRolls) + 1 }],
@@ -232,14 +265,15 @@ export function createUI(data) {
       ["易傷 +10%", { vulnerability: Number(current.vulnerability) + 10 }],
     ].map(([label, override]) => {
       const next = calculateDamage(data, current, override).expected;
-      return { label, gain: (next / baseResult.expected - 1) * 100 };
+      const gain = baseResult.expected > 0 ? (next / baseResult.expected - 1) * 100 : 0;
+      return { label, gain };
     });
 
     candidates.sort((a, b) => b.gain - a.gain);
-    const best = candidates[0];
-    document.getElementById("bestInsight").textContent =
-      `${best.label} 目前提升最大，約增加 ${best.gain.toFixed(2)}%。` +
-      "這是用當前面板做邊際比較，適合用來決定接下來該補哪一類詞條或隊友 Buff。";
+    const top = candidates[0];
+    document.getElementById("configInsight").textContent =
+      `${top.label} 在目前配置下邊際提升較高，約增加 ${top.gain.toFixed(2)}%。` +
+      "這只是以當前面板做單步配置比較，不代表已執行最佳化器。";
 
     document.getElementById("marginalTable").innerHTML = candidates
       .slice(0, 4)
@@ -295,6 +329,28 @@ export function createUI(data) {
     if (item.unit === "%") return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
     if (item.unit === "x") return `${value.toFixed(4)}x`;
     return value.toFixed(1);
+  }
+
+  function findFactor(result, label) {
+    return result.factorSummary.find((factor) => factor.label === label)?.value ?? 0;
+  }
+
+  function formatFactorCardValue(value) {
+    return `${Number(value || 0).toFixed(4)}x`;
+  }
+
+  function teamFieldIds() {
+    return [
+      "teammate1",
+      "teammate1Eidolon",
+      "teammate1Setup",
+      "teammate2",
+      "teammate2Eidolon",
+      "teammate2Setup",
+      "teammate3",
+      "teammate3Eidolon",
+      "teammate3Setup",
+    ];
   }
 
   function escapeHtml(value) {

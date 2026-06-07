@@ -264,7 +264,8 @@ button:focus-visible {
   margin-bottom: 16px;
 }
 
-.result-card {
+.result-card,
+.aux-result-card {
   min-height: 114px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -272,12 +273,14 @@ button:focus-visible {
   background: #fbfcfe;
 }
 
-.result-card span {
+.result-card span,
+.aux-result-card span {
   color: var(--muted);
   font-size: 0.86rem;
 }
 
-.result-card strong {
+.result-card strong,
+.aux-result-card strong {
   display: block;
   margin-top: 12px;
   font-size: clamp(1.5rem, 3vw, 2.4rem);
@@ -303,6 +306,21 @@ button:focus-visible {
   margin-bottom: 0;
   color: var(--muted);
   line-height: 1.65;
+}
+
+.aux-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.aux-result-card {
+  min-height: 86px;
+}
+
+.aux-result-card strong {
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
 }
 
 .mini-table {
@@ -339,6 +357,22 @@ button:focus-visible {
   display: grid;
   gap: 10px;
   margin-top: 12px;
+}
+
+.target-distribution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.target-distribution span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fbfcfe;
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .breakdown-item {
@@ -493,6 +527,7 @@ button:focus-visible {
 
   .switch-grid,
   .result-grid,
+  .aux-result-grid,
   .factor-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -519,6 +554,7 @@ button:focus-visible {
   .team-grid,
   .switch-grid,
   .result-grid,
+  .aux-result-grid,
   .factor-list {
     grid-template-columns: 1fr;
   }

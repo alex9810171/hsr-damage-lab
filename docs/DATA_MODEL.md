@@ -83,9 +83,26 @@
 - `type`：`basic`、`skill`、`ultimate`、`followUp` 等。
 - `hits`：多段傷害應拆成多個 hit。
 - `targets`：可使用數字或 `"all"`。
+- `targetPattern`：V1 開始可用來表示命中列，例如 `center`、`adjacent`、`all`。
+- `mechanicRow`：表示該 hit 是角色機制列，例如大黑塔強化戰技的解讀層數倍率。
 - `repeats`：同一段 hit 重複次數。
 - `tags`：供 Buff 條件判斷。
 - `mechanics`：只放可資料化的技能特殊規則。
+
+## V1 技能命中分布
+
+V1 已開始支援技能命中分布。大黑塔戰技與強化戰技不能只用 `targets` / `repeats`
+表示，因為 5 敵時主目標、相鄰目標與外側目標的總倍率不同。
+
+目前大黑塔資料使用 `targetPattern` 表示每一列命中：
+
+- `center`：只命中主目標。
+- `adjacent`：命中主目標與相鄰目標。
+- `all`：命中目前敵人全體。
+- `mechanicRow: "interpretation"`：強化戰技解讀列，依解讀層數、2 智識與一魂開關計算。
+
+未來多角色若有更複雜的站位、彈射或隨機目標規則，應交給 `skill-engine.js` 或角色
+resolver 處理，不應把特殊分布散落在 UI。
 
 ## Buff 建議格式
 
@@ -188,6 +205,14 @@
   ]
 }
 ```
+
+V1 遺器與位面飾品資料可加入 `supportStatus` 與 `notes`：
+
+- `已支援`：目前效果已接入單次傷害計算。
+- `部分支援`：只支援會影響 V1 單次傷害的部分，不套用未確認或未模擬效果。
+- `待核對`：資料或公式未確認，不自動套用效果。
+
+不確定資料應標 TODO 或 `notes`，不應臆測補入計算。
 
 ## Light Cone 建議格式
 

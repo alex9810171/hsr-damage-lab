@@ -6,6 +6,7 @@ export function renderFormulaDebug(result) {
   const teamSources = state.teamAutoBuffs.sources.length ? state.teamAutoBuffs.sources.join("，") : "無";
   const interpretationMainPerStack = state.twoErudition ? 16 : 8;
   const interpretationAdjacentPerStack = state.twoErudition ? 8 : 4;
+  const interpretationEidolonMult = state.hertaE1 ? 1.5 : 1;
   const riddleHit = state.skill.hits.find((hit) => hit.riddle);
   const riddleDetail =
     state.skill.id === "ultimate" && riddleHit
@@ -21,7 +22,8 @@ export function renderFormulaDebug(result) {
     "V1 未套用大黑塔 6 魂終結技依敵人數增加的 140% / 250% / 400% 額外倍率",
     "",
     "配置",
-    `隊伍 = ${state.team?.label ?? "無"}`,
+    `隊伍 = ${state.teamLabel}`,
+    `實際隊友 = ${state.activeTeamMembers.map((member) => `${member.name} E${member.eidolon} / ${member.setup}`).join("；")}`,
     `隊伍自動效果 = ${teamSources}`,
     `隧洞遺器 = ${state.cavernSet.label}`,
     `位面飾品 = ${state.planarSet.label}`,
@@ -37,7 +39,8 @@ export function renderFormulaDebug(result) {
     `增傷% = 主詞條 ${pct(state.dmgParts.main)} + 隊伍/校正 ${pct(state.dmgParts.team)} + 行跡冰傷 ${pct(state.dmgParts.trace)} + 光錐 ${pct(state.dmgParts.lightCone)} + 套裝基礎 ${pct(state.dmgParts.relicBase)} + 套裝技能 ${pct(state.dmgParts.relicSkill)} + 套裝終結技 ${pct(state.dmgParts.relicUltimate)} + 終結技後下次戰技 ${pct(state.dmgParts.relicAfterUltimateSkill)} + 繁星條件 ${pct(state.dmgParts.relicConditional)} + 42 層行跡 ${pct(result.traceDmg)} = ${pct(state.dmgBonus + result.traceDmg)}`,
     "",
     "大黑塔特殊機制",
-    `解讀層數倍率 = 主目標每層 +${interpretationMainPerStack}% / 其他目標每層 +${interpretationAdjacentPerStack}%（2 智識：${state.twoErudition ? "已啟用" : "未啟用"}）`,
+    `解讀層數倍率 = 主目標每層 +${interpretationMainPerStack}% / 其他目標每層 +${interpretationAdjacentPerStack}%（2 智識：${state.twoErudition ? "已啟用" : "未啟用"}；一魂倍率：${state.hertaE1 ? "已啟用 x1.5" : "未啟用"}）`,
+    `解讀列代入 = ${state.interpretationStacks} 層 x 主目標 ${interpretationMainPerStack}% x ${interpretationEidolonMult}；其他目標 ${state.interpretationStacks} 層 x ${interpretationAdjacentPerStack}% x ${interpretationEidolonMult}`,
     riddleDetail,
     `大黑塔終結技後攻擊 Buff = ${state.atkParts.ultimate ? "已啟用" : "未啟用"}，${pct(state.atkParts.ultimate)}`,
     "6 魂終結技額外倍率 = V1 未套用",
@@ -59,6 +62,7 @@ export function renderFormulaDebug(result) {
     ...result.factorSummary.map((factor) => `${factor.label} = ${dec(factor.value)} (${factor.formula}${factor.detail ? `，${factor.detail}` : ""})`),
     "",
     "分段 Hit",
+    `目標總倍率分布 = ${result.targetDistribution.map((item) => `${item.label} ${pct(item.multiplier)}`).join(" / ")}`,
     ...result.hits.flatMap((hit, index) => [
       `${index + 1}. ${hit.label}`,
       `   基礎 = ${state.finalAtk.toFixed(1)} x ${pct(hit.ability)} x ${hit.targets} x ${hit.repeats} = ${hit.base.toFixed(1)}`,

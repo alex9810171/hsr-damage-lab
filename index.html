@@ -91,21 +91,21 @@
             <span>隧洞遺器</span>
             <select id="cavernSet">
               <option value="none">不套用</option>
-              <option value="scholar">識海迷墜的學者：暴率 8%、戰技/終結技增傷</option>
-              <option value="ice">密林臥雪的獵人：冰傷 10%、終結技後暴傷 25%</option>
-              <option value="wind">晨昏交界的翔鷹：風傷 10%、終結技後行動提前</option>
-              <option value="valorous">風舉雲飛的勇烈：暴率 6%、條件終結技增傷</option>
-              <option value="warriorGoddess">女武神套裝：待核對</option>
+              <option value="scholar">[已支援] 識海迷墜的學者：暴率 8%、戰技/終結技增傷</option>
+              <option value="ice">[已支援] 密林臥雪的獵人：冰傷 10%、終結技後暴傷 25%</option>
+              <option value="wind">[部分支援] 晨昏交界的翔鷹：目前不套用行動提前</option>
+              <option value="valorous">[部分支援] 風舉雲飛的勇烈：暴率已支援，條件增傷待核對</option>
+              <option value="warriorGoddess">[待核對] 女武神套裝：不自動套用效果</option>
             </select>
           </label>
           <label class="wide">
             <span>位面飾品</span>
             <select id="planarSet">
               <option value="none">不套用</option>
-              <option value="izumo">出雲顯世與高天神國：攻擊 12%、同命途暴率 12%</option>
-              <option value="rutilant">繁星競技場：暴率 8%、達 70% 時普攻/戰技增傷</option>
-              <option value="vonwacq">生命的翁瓦克：能量恢復、行動提前</option>
-              <option value="lushaka">沉陸海域露莎卡：能量恢復、1號位攻擊</option>
+              <option value="izumo">[已支援] 出雲顯世與高天神國：攻擊 12%、同命途暴率 12%</option>
+              <option value="rutilant">[已支援] 繁星競技場：暴率 8%、達 70% 時普攻/戰技增傷</option>
+              <option value="vonwacq">[部分支援] 生命的翁瓦克：目前不套用行動提前</option>
+              <option value="lushaka">[部分支援] 沉陸海域露莎卡：隊友輔助遺器 1 號位攻擊已支援</option>
             </select>
           </label>
 
@@ -172,6 +172,10 @@
                 <span>42 層解讀行跡增傷</span>
               </label>
               <label class="switch">
+                <input id="hertaE1" type="checkbox" />
+                <span>大黑塔一魂解讀倍率</span>
+              </label>
+              <label class="switch">
                 <input id="targetBroken" type="checkbox" />
                 <span>敵人已弱點擊破</span>
               </label>
@@ -187,21 +191,32 @@
                 <strong id="critDamageResult">0</strong>
               </article>
               <article class="result-card">
-                <span>非暴擊傷害</span>
-                <strong id="normalDamageResult">0</strong>
+                <span>傷害乘區總值</span>
+                <strong id="damageFactorTotal">0</strong>
               </article>
               <article class="result-card">
-                <span>最終攻擊力</span>
-                <strong id="finalAtk">0</strong>
+                <span>完整期望倍率</span>
+                <strong id="fullExpectedMultiplier">0</strong>
               </article>
             </div>
 
             <div class="analysis-band">
               <div>
-                <h2>最佳解方向</h2>
-                <p id="bestInsight">正在計算...</p>
+                <h2>配置比較參考</h2>
+                <p id="configInsight">正在計算...</p>
               </div>
               <div class="mini-table" id="marginalTable"></div>
+            </div>
+
+            <div class="aux-result-grid">
+              <article class="aux-result-card">
+                <span>非暴擊傷害</span>
+                <strong id="normalDamageResult">0</strong>
+              </article>
+              <article class="aux-result-card">
+                <span>最終攻擊力</span>
+                <strong id="finalAtk">0</strong>
+              </article>
             </div>
 
             <div class="skill-breakdown">

@@ -20,13 +20,15 @@ export function calculateDamage(data, inputs, overrides = {}) {
     multipliers.mitigationMult *
     multipliers.brokenMult;
 
-  const hits = state.skill.hits.map((hit) => {
-    const targets = hit.targets === "all" ? state.enemyCount : Math.min(Number(hit.targets), state.enemyCount);
-    const repeats = hit.repeats ?? 1;
-    const ability = hitMultiplier(hit, state);
+  const hits = resolveSkillHits(state).map((hit) => {
+    const targets = hit.targets;
+    const repeats = hit.repeats;
+    const ability = hit.ability;
     const base = state.finalAtk * percent(ability) * targets * repeats;
     return {
       label: hit.label,
+      rowLabel: hit.rowLabel,
+      position: hit.position,
       ability,
       targets,
       repeats,
@@ -41,6 +43,7 @@ export function calculateDamage(data, inputs, overrides = {}) {
   return {
     state,
     hits,
+    targetDistribution: buildTargetDistribution(hits),
     normal: sum("normal"),
     crit: sum("crit"),
     expected: sum("expected"),
@@ -65,7 +68,8 @@ export function readState(data, inputs, overrides = {}) {
   const lightConeKey = overrides.lightCone ?? inputs.lightCone;
   const lightCone = lightCones[lightConeKey] ?? lightCones.none;
   const teamKey = overrides.teamPreset ?? inputs.teamPreset;
-  const team = teams[teamKey];
+  const presetTeam = teams[teamKey];
+  const activeTeamMembers = activeTeamFromInputs(inputs, overrides, presetTeam);
   const skill = character.skills.find((item) => item.id === (overrides.skillId ?? inputs.skillSelect));
   const selectedMains = {
     body: mainStatValues.bodyMainStat[overrides.bodyMainStat ?? inputs.bodyMainStat],
@@ -83,7 +87,7 @@ export function readState(data, inputs, overrides = {}) {
   const ultimateAtkBuff = Number(overrides.ultimateAtkBuff ?? character.ultimateAtkBuff);
   const afterUltimate = overrides.afterUltimate ?? inputs.afterUltimate;
   const twoErudition = overrides.twoErudition ?? inputs.twoErudition;
-  const teamAutoBuffs = team ? teamBuffs(data, team) : emptyBuffs();
+  const teamAutoBuffs = teamBuffs(data, activeTeamMembers);
   const lightConeDmg = lightConeDmgBonus(lightCone, skill, afterUltimate);
 
   const atkParts = {
@@ -144,7 +148,10 @@ export function readState(data, inputs, overrides = {}) {
     cavernSetKey,
     planarSetKey,
     lightCone,
-    team,
+    team: presetTeam,
+    teamKey,
+    activeTeamMembers,
+    teamLabel: teamKey === "custom" ? "自訂隊伍" : (presetTeam?.label ?? "自訂隊伍"),
     teamAutoBuffs,
     selectedMains,
     baseAtk,
@@ -177,6 +184,7 @@ export function readState(data, inputs, overrides = {}) {
     riddleStacks: Number(overrides.riddleStacks ?? inputs.riddleStacks),
     twoErudition,
     fullInterpretationTrace: overrides.fullInterpretationTrace ?? inputs.fullInterpretationTrace,
+    hertaE1: overrides.hertaE1 ?? inputs.hertaE1,
     targetBroken: overrides.targetBroken ?? inputs.targetBroken,
     character,
   };
@@ -203,12 +211,64 @@ function multiplierSet(state) {
   };
 }
 
-function hitMultiplier(hit, state) {
+function resolveSkillHits(state) {
+  return state.skill.hits.flatMap((hit) => {
+    const positions = targetPositionsForHit(hit, state.enemyCount);
+    return positions.map((position) => {
+      const ability = hitMultiplier(hit, state, position);
+      return {
+        label: `${hit.label}${positions.length > 1 ? `（${targetLabel(position)}）` : ""}`,
+        rowLabel: hit.label,
+        position,
+        ability,
+        targets: 1,
+        repeats: hit.repeats ?? 1,
+      };
+    });
+  });
+}
+
+function targetPositionsForHit(hit, enemyCount) {
+  if (hit.targetPattern) {
+    const positions = activeTargetPositions(enemyCount);
+    if (hit.targetPattern === "all") return positions;
+    if (hit.targetPattern === "center") return positions.includes(0) ? [0] : positions.slice(0, 1);
+    if (hit.targetPattern === "adjacent") return positions.filter((position) => Math.abs(position) <= 1);
+  }
+  const targets = hit.targets === "all" ? enemyCount : Math.min(Number(hit.targets ?? 1), enemyCount);
+  return activeTargetPositions(enemyCount).slice(0, targets);
+}
+
+function activeTargetPositions(enemyCount) {
+  const count = Math.trunc(clamp(Number(enemyCount || 1), 1, 5));
+  if (count === 1) return [0];
+  if (count === 2) return [0, 1];
+  if (count === 3) return [-1, 0, 1];
+  if (count === 4) return [-1, 0, 1, 2];
+  return [-2, -1, 0, 1, 2];
+}
+
+function targetLabel(position) {
+  if (position === 0) return "主目標";
+  if (position === -1) return "左一";
+  if (position === -2) return "左二";
+  if (position === 1) return "右一";
+  if (position === 2) return "右二";
+  return `目標 ${position}`;
+}
+
+function hitMultiplier(hit, state, position = 0) {
   let mult = hit.multiplier;
-  if (hit.interpretation) {
+  if (hit.mechanicRow === "interpretation") {
     const perStack = state.twoErudition ? 16 : 8;
     const adjacentPerStack = state.twoErudition ? 8 : 4;
-    mult += state.interpretationStacks * (hit.interpretation === "main" ? perStack : adjacentPerStack);
+    const eidolonMultiplier = state.hertaE1 ? 1.5 : 1;
+    mult += state.interpretationStacks * (position === 0 ? perStack : adjacentPerStack) * eidolonMultiplier;
+  } else if (hit.interpretation) {
+    const perStack = state.twoErudition ? 16 : 8;
+    const adjacentPerStack = state.twoErudition ? 8 : 4;
+    const eidolonMultiplier = state.hertaE1 ? 1.5 : 1;
+    mult += state.interpretationStacks * (hit.interpretation === "main" ? perStack : adjacentPerStack) * eidolonMultiplier;
   }
   if (hit.riddle) mult += state.riddleStacks;
   return mult;
@@ -225,9 +285,56 @@ function lightConeDmgBonus(lightCone, skill, afterUltimate) {
   return bonus;
 }
 
-function teamBuffs(data, team) {
+function activeTeamFromInputs(inputs, overrides, presetTeam) {
+  const fallbackMembers = presetTeam?.members?.slice(1) ?? [];
+  return [1, 2, 3].map((slot) => {
+    const fallback = fallbackMembers[slot - 1] ?? {};
+    const id = overrides[`teammate${slot}`] ?? inputs[`teammate${slot}`] ?? fallback.id ?? "none";
+    const setup = overrides[`teammate${slot}Setup`] ?? inputs[`teammate${slot}Setup`] ?? memberSetup(fallback);
+    return {
+      slot: slot + 1,
+      id,
+      name: teammateName(id, fallback.name),
+      eidolon: Number(overrides[`teammate${slot}Eidolon`] ?? inputs[`teammate${slot}Eidolon`] ?? fallback.eidolon ?? 0),
+      setup,
+      planarSet: teammatePlanarSet(id, setup, fallback.planarSet),
+    };
+  });
+}
+
+function memberSetup(member = {}) {
+  if (member.signatureSuperimposition > 0 && member.planarSet !== "none") return "signatureRelic";
+  if (member.signatureSuperimposition > 0) return "signature";
+  if (member.planarSet && member.planarSet !== "none") return "relic";
+  return "none";
+}
+
+function teammateName(id, fallbackName) {
+  const names = {
+    none: "未選擇",
+    custom: "自訂隊友",
+    anaxa: "那刻夏",
+    tribbie: "緹寶",
+    hyacine: "風堇",
+    jade: "翡翠",
+    smallHerta: "黑塔",
+    robin: "知更鳥",
+    ruanMei: "阮・梅",
+    pela: "佩拉",
+  };
+  return names[id] ?? fallbackName ?? id;
+}
+
+function teammatePlanarSet(id, setup, fallbackPlanarSet) {
+  if (setup !== "relic" && setup !== "signatureRelic") return "none";
+  if (fallbackPlanarSet && fallbackPlanarSet !== "none") return fallbackPlanarSet;
+  if (id === "anaxa" || id === "tribbie") return "lushaka";
+  return "none";
+}
+
+function teamBuffs(data, members) {
   const buffs = emptyBuffs();
-  team.members.forEach((member) => {
+  members.forEach((member) => {
     const planar = data.relicSets[member.planarSet];
     if (member.slot !== 1 && planar?.firstSlotAtkIfNotFirst) {
       buffs.atkPercent += planar.firstSlotAtkIfNotFirst;
@@ -235,6 +342,19 @@ function teamBuffs(data, team) {
     }
   });
   return buffs;
+}
+
+function buildTargetDistribution(hits) {
+  const labels = new Map();
+  const totals = new Map();
+  hits.forEach((hit) => {
+    if (hit.position === undefined) return;
+    labels.set(hit.position, targetLabel(hit.position));
+    totals.set(hit.position, (totals.get(hit.position) ?? 0) + hit.ability * hit.targets * hit.repeats);
+  });
+  return [...totals.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([position, multiplier]) => ({ position, label: labels.get(position), multiplier }));
 }
 
 function emptyBuffs() {

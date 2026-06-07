@@ -1,42 +1,58 @@
 {
-  "none": { "label": "不套用", "category": "any" },
+  "none": { "label": "不套用", "category": "any", "supportStatus": "已支援" },
   "scholar": {
     "label": "識海迷墜的學者",
     "category": "cavern",
+    "supportStatus": "已支援",
     "critRate": 8,
     "skillDmg": 20,
     "ultDmg": 20,
     "nextSkillDmgAfterUlt": 25
   },
-  "ice": { "label": "密林臥雪的獵人", "category": "cavern", "dmgBonus": 10, "ultCritDamage": 25 },
+  "ice": { "label": "密林臥雪的獵人", "category": "cavern", "supportStatus": "已支援", "dmgBonus": 10, "ultCritDamage": 25 },
   "wind": {
     "label": "晨昏交界的翔鷹",
     "category": "cavern",
+    "supportStatus": "部分支援",
+    "notes": "V1 不模擬行動提前；目前不將風屬性增傷套用到大黑塔冰傷。",
     "windDmg": 10,
     "actionAdvanceAfterUltimate": 25
   },
   "valorous": {
     "label": "風舉雲飛的勇烈",
     "category": "cavern",
+    "supportStatus": "部分支援",
+    "notes": "V1 只套用已確認的暴擊率；條件終結技增傷待核對後再接入。",
     "critRate": 6,
     "ultimateDmgAfterFollowUp": 36
   },
   "warriorGoddess": {
     "label": "女武神套裝",
     "category": "cavern",
+    "supportStatus": "待核對",
     "notes": "待核對正式套裝效果後接入計算"
   },
-  "izumo": { "label": "出雲顯世與高天神國", "category": "planar", "atkPercent": 12, "critRate": 12 },
+  "izumo": { "label": "出雲顯世與高天神國", "category": "planar", "supportStatus": "已支援", "atkPercent": 12, "critRate": 12 },
   "rutilant": {
     "label": "繁星競技場",
     "category": "planar",
+    "supportStatus": "已支援",
     "critRate": 8,
     "basicSkillDmgWhen70Cr": 20
   },
-  "vonwacq": { "label": "生命的翁瓦克", "category": "planar", "energyRegen": 5, "actionAdvanceAtSpeed": 120 },
+  "vonwacq": {
+    "label": "生命的翁瓦克",
+    "category": "planar",
+    "supportStatus": "部分支援",
+    "notes": "V1 不模擬能量恢復與行動提前，因此不影響單次傷害。",
+    "energyRegen": 5,
+    "actionAdvanceAtSpeed": 120
+  },
   "lushaka": {
     "label": "沉陸海域露莎卡",
     "category": "planar",
+    "supportStatus": "部分支援",
+    "notes": "V1 僅支援隊友輔助遺器提供 1 號位攻擊加成；能量恢復不影響單次傷害。",
     "energyRegen": 5,
     "firstSlotAtkIfNotFirst": 12
   }

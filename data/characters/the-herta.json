@@ -27,9 +27,12 @@
       "name": "戰技",
       "type": "skill",
       "displayType": "戰技",
+      "targetPattern": "centered-five",
+      "notes": "V1 使用命中列分布表示：5 敵時彙總為 70 / 140 / 210 / 140 / 70。",
       "hits": [
-        { "label": "指定單體", "multiplier": 70, "targets": 1 },
-        { "label": "命中目標及相鄰目標，重複 2 次", "multiplier": 70, "targets": 3, "repeats": 2 }
+        { "label": "第 1 層：主目標", "multiplier": 70, "targetPattern": "center" },
+        { "label": "第 2 層：主目標及相鄰目標", "multiplier": 70, "targetPattern": "adjacent" },
+        { "label": "第 3 層：敵方全體", "multiplier": 70, "targetPattern": "all" }
       ]
     },
     {
@@ -38,16 +41,20 @@
       "type": "skill",
       "displayType": "戰技",
       "enhanced": true,
+      "targetPattern": "centered-five",
+      "notes": "V1 使用命中列分布表示；解讀列由 calculator.js 依層數、2 智識與一魂開關計算。",
       "hits": [
-        { "label": "指定單體", "multiplier": 80, "targets": 1, "interpretation": "main" },
+        { "label": "第 1 層：主目標", "multiplier": 80, "targetPattern": "center" },
+        { "label": "第 2 層：主目標及相鄰目標", "multiplier": 80, "targetPattern": "adjacent" },
+        { "label": "第 3 層：敵方全體", "multiplier": 80, "targetPattern": "all" },
+        { "label": "收尾：敵方全體", "multiplier": 40, "targetPattern": "all" },
         {
-          "label": "命中目標及相鄰目標，重複 2 次",
-          "multiplier": 80,
-          "targets": 3,
-          "repeats": 2,
-          "interpretation": "adjacent"
-        },
-        { "label": "敵方全體收尾", "multiplier": 40, "targets": "all" }
+          "label": "解讀層數倍率",
+          "multiplier": 0,
+          "targetPattern": "all",
+          "mechanicRow": "interpretation",
+          "notes": "主目標與其他目標每層倍率不同；一魂啟用時此列等效提高 50%。"
+        }
       ]
     },
     {
