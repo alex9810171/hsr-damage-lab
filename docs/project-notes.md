@@ -14,6 +14,7 @@
 - 計算邏輯與資料暫放在 `assets/js/app.js`。
 - 第一版 UI 使用繁體中文。
 - 專案資料夾名稱：`hsr-damage-lab`。
+- 線上網站：https://alex9810171.github.io/hsr-damage-lab/
 
 ## 目前資料模型
 
@@ -131,8 +132,8 @@ data/
 Settings > Pages > Deploy from a branch > main / root
 ```
 
-預期網址：
+目前網址：
 
 ```text
-https://你的帳號.github.io/hsr-damage-lab/
+https://alex9810171.github.io/hsr-damage-lab/
 ```

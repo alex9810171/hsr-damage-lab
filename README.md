@@ -2,6 +2,8 @@
 
 第一版是純靜態網站，先支援大黑塔單次傷害計算。直接用瀏覽器開啟 `index.html` 即可使用，也可以部署到 GitHub Pages。
 
+線上網站：https://alex9810171.github.io/hsr-damage-lab/
+
 更多開發脈絡、公式假設與 TODO 請看 [`docs/project-notes.md`](docs/project-notes.md)。
 
 ## 專案結構
@@ -38,4 +40,10 @@ hsr-damage-lab/
 
 ```text
 Settings > Pages > Deploy from a branch > main / root
+```
+
+目前網站網址：
+
+```text
+https://alex9810171.github.io/hsr-damage-lab/
 ```
