@@ -219,8 +219,8 @@ export function createUI(data) {
     setText("expectedDamage", fmt(result.expected));
     setText("critDamageResult", fmt(result.crit));
     setText("normalDamageResult", fmt(result.normal));
-    setText("damageFactorTotal", formatFactorCardValue(findFactor(result, "傷害乘區總值")));
-    setText("fullExpectedMultiplier", formatFactorCardValue(findFactor(result, "完整期望倍率")));
+    setText("damageFactorTotal", formatFactorCardValue(findFactor(result, "技能總倍率")));
+    setText("fullExpectedMultiplier", formatFactorCardValue(findFactor(result, "不含攻擊力期望倍率")));
     setText("finalAtk", fmt(result.state.finalAtk));
     renderBreakdown(result);
     renderFactorSummary(result);
@@ -229,29 +229,85 @@ export function createUI(data) {
   }
 
   function renderBreakdown(result) {
-    const distributionHtml = result.targetDistribution?.length
-      ? `
+    const baseHits = result.hits.filter((hit) => hit.rowLabel !== "解讀層數倍率");
+    const interpretationHits = result.hits.filter((hit) => hit.rowLabel === "解讀層數倍率");
+    document.getElementById("skillBreakdown").innerHTML = `
+      ${renderTargetOverview(result.targetDistribution)}
+      ${renderHitGroup("基礎命中列", summarizeHits(baseHits), false)}
+      ${interpretationHits.length ? renderHitGroup("解讀層數倍率", summarizeHits(interpretationHits, true), false) : ""}
+      <details class="breakdown-section">
+        <summary>詳細 hit 計算</summary>
+        <div class="breakdown-list compact-list">
+          ${result.hits.map(renderDetailedHit).join("")}
+        </div>
+      </details>
+    `;
+  }
+
+  function renderTargetOverview(distribution = []) {
+    if (!distribution.length) return "";
+    return `
+      <details class="breakdown-section target-overview" open>
+        <summary>目標總覽</summary>
         <div class="target-distribution">
-          ${result.targetDistribution
-            .map((item) => `<span>${escapeHtml(item.label)}：${item.multiplier.toFixed(0)}%</span>`)
+          ${distribution.map((item) => `<span><strong>${escapeHtml(item.label)}</strong>${item.multiplier.toFixed(0)}%</span>`).join("")}
+        </div>
+      </details>
+    `;
+  }
+
+  function renderHitGroup(title, rows, open = false) {
+    if (!rows.length) return "";
+    return `
+      <details class="breakdown-section"${open ? " open" : ""}>
+        <summary>${escapeHtml(title)}</summary>
+        <div class="breakdown-list">
+          ${rows
+            .map(
+              (row) => `
+                <div class="breakdown-item breakdown-row">
+                  <strong>${escapeHtml(row.label)}</strong>
+                  <span>倍率：${row.ability.toFixed(0)}%</span>
+                  <span>目標：${row.targets}</span>
+                  <span>次數：${row.repeats}</span>
+                  <strong>${fmt(row.expected)}</strong>
+                </div>
+              `,
+            )
             .join("")}
         </div>
-      `
-      : "";
-    const html = result.hits
-      .map(
-        (hit) => `
-          <div class="breakdown-item">
-            <div>
-              <strong>${hit.label}</strong>
-              <span>倍率 ${hit.ability.toFixed(1)}% x 目標 ${hit.targets} x 次數 ${hit.repeats}</span>
-            </div>
-            <strong>${fmt(hit.expected)}</strong>
-          </div>
-        `,
-      )
-      .join("");
-    document.getElementById("skillBreakdown").innerHTML = `${distributionHtml}<div class="breakdown-list">${html}</div>`;
+      </details>
+    `;
+  }
+
+  function renderDetailedHit(hit) {
+    return `
+      <div class="breakdown-item detail-hit">
+        <strong>${escapeHtml(hit.label)}</strong>
+        <span>倍率：${hit.ability.toFixed(0)}%</span>
+        <span>目標：${hit.targets}</span>
+        <span>次數：${hit.repeats}</span>
+        <strong>${fmt(hit.expected)}</strong>
+      </div>
+    `;
+  }
+
+  function summarizeHits(hits, useTargetLabel = false) {
+    const rows = new Map();
+    hits.forEach((hit) => {
+      const label = useTargetLabel ? targetLabel(hit.position) : hit.rowLabel;
+      const current = rows.get(label) ?? {
+        label,
+        ability: hit.ability,
+        targets: 0,
+        repeats: hit.repeats,
+        expected: 0,
+      };
+      current.targets += hit.targets;
+      current.expected += hit.expected;
+      rows.set(label, current);
+    });
+    return [...rows.values()];
   }
 
   function renderMarginalReference(baseResult) {
@@ -272,7 +328,7 @@ export function createUI(data) {
     candidates.sort((a, b) => b.gain - a.gain);
     const top = candidates[0];
     document.getElementById("configInsight").textContent =
-      `${top.label} 在目前配置下邊際提升較高，約增加 ${top.gain.toFixed(2)}%。` +
+      `單步提升比較：${top.label} 約增加 ${top.gain.toFixed(2)}%。` +
       "這只是以當前面板做單步配置比較，不代表已執行最佳化器。";
 
     document.getElementById("marginalTable").innerHTML = candidates
@@ -289,7 +345,7 @@ export function createUI(data) {
           <details class="factor-row">
             <summary>
               <span class="factor-title">${escapeHtml(factor.label)}</span>
-              <strong>${formatFactorValue(factor.value)}</strong>
+              <strong>${formatFactorValue(factor)}</strong>
             </summary>
             <div class="factor-body">
               <p>${escapeHtml(factor.formula)}${factor.detail ? `：${escapeHtml(factor.detail)}` : ""}</p>
@@ -310,7 +366,7 @@ export function createUI(data) {
             (item) => `
               <li>
                 <span>${escapeHtml(item.label)}</span>
-                <strong>${formatPartValue(item)}</strong>
+              <strong>${formatPartValue(item)}</strong>
                 ${item.note ? `<em>${escapeHtml(item.note)}</em>` : ""}
               </li>
             `,
@@ -320,8 +376,11 @@ export function createUI(data) {
     `;
   }
 
-  function formatFactorValue(value) {
-    return Number(value || 0).toFixed(4);
+  function formatFactorValue(factor) {
+    const value = Number(factor.value || 0);
+    if (factor.unit === "atk") return fmt(value);
+    if (factor.unit === "x") return `${value.toFixed(4)}x`;
+    return value.toFixed(4);
   }
 
   function formatPartValue(item) {
@@ -337,6 +396,15 @@ export function createUI(data) {
 
   function formatFactorCardValue(value) {
     return `${Number(value || 0).toFixed(4)}x`;
+  }
+
+  function targetLabel(position) {
+    if (position === 0) return "主目標";
+    if (position === -1) return "左一";
+    if (position === -2) return "左二";
+    if (position === 1) return "右一";
+    if (position === 2) return "右二";
+    return `目標 ${position}`;
   }
 
   function teamFieldIds() {

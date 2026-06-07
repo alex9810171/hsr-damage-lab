@@ -12,6 +12,10 @@ export function renderFormulaDebug(result) {
     state.skill.id === "ultimate" && riddleHit
       ? `終結技謎底層數 = 基礎 ${pct(riddleHit.multiplier)} + ${state.riddleStacks} 層 x 1%`
       : "終結技謎底層數 = 非終結技，不套用";
+  const factorValue = (label) => result.factorSummary.find((factor) => factor.label === label)?.value ?? 0;
+  const skillTotalMultiplier = factorValue("技能總倍率");
+  const commonExpectedMultiplier = factorValue("通用乘區倍率");
+  const expectedMultiplierWithoutAtk = factorValue("不含攻擊力期望倍率");
 
   const lines = [
     "公式 Debug",
@@ -54,9 +58,13 @@ export function renderFormulaDebug(result) {
     `造成傷害降低乘區 = 1 - ${pct(state.weaken)} = ${dec(multipliers.weakenMult)}`,
     `減傷乘區 = 1 - ${pct(state.mitigation)} = ${dec(multipliers.mitigationMult)}`,
     `破韌乘區 = ${state.targetBroken ? "已破韌" : "未破韌"} = ${dec(multipliers.brokenMult)}`,
-    `總乘區 = ${dec(result.common)}`,
+    `非暴擊通用乘區 = ${dec(result.common)}`,
     `暴擊乘區 = 1 + ${pct(state.critDamage)} = ${dec(result.critMult)}`,
     `期望暴擊乘區 = 1 + ${pct(state.critRate)} x ${pct(state.critDamage)} = ${dec(result.expectedCritMult)}`,
+    `技能總倍率 = ${dec(skillTotalMultiplier)}，目前技能在目前敵人數與命中分布下的總倍率`,
+    `通用乘區倍率 = 增傷區 x 暴擊期望 x 防禦區 x 抗性區 x 易傷區 x 我方減傷區 x 敵方減傷區 x 弱點區 = ${dec(commonExpectedMultiplier)}`,
+    `不含攻擊力期望倍率 = 技能總倍率 x 通用乘區倍率 = ${dec(expectedMultiplierWithoutAtk)}`,
+    `期望傷害 = 最終攻擊力 x 不含攻擊力期望倍率 = ${state.finalAtk.toFixed(1)} x ${dec(expectedMultiplierWithoutAtk)} = ${result.expected.toFixed(1)}`,
     "",
     "乘區摘要",
     ...result.factorSummary.map((factor) => `${factor.label} = ${dec(factor.value)} (${factor.formula}${factor.detail ? `，${factor.detail}` : ""})`),

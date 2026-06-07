@@ -371,7 +371,7 @@ function emptyBuffs() {
 
 function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult, traceDmg) {
   const totalAbility = hits.reduce((total, hit) => total + percent(hit.ability) * hit.targets * hit.repeats, 0);
-  const damageFactorTotal =
+  const commonExpectedMultiplier =
     dmgBoost *
     expectedCritMult *
     multipliers.defMult *
@@ -380,8 +380,16 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     multipliers.weakenMult *
     multipliers.mitigationMult *
     multipliers.brokenMult;
-  const fullExpectedMultiplier = totalAbility * damageFactorTotal;
-  const atkMultiplier = state.baseAtk > 0 ? state.finalAtk / state.baseAtk : 0;
+  const expectedMultiplierWithoutAtk = totalAbility * commonExpectedMultiplier;
+  const targetParts = buildTargetDistribution(hits).map((item) =>
+    part(`目標總覽：${item.label}`, percent(item.multiplier), "x", `${item.multiplier.toFixed(0)}%`),
+  );
+  const baseHitParts = summarizeHitRows(hits.filter((hit) => hit.rowLabel !== "解讀層數倍率")).map((item) =>
+    part(`基礎命中：${item.label}`, item.value, "x", item.note),
+  );
+  const interpretationParts = hits
+    .filter((hit) => hit.rowLabel === "解讀層數倍率")
+    .map((hit) => part(`解讀層數：${targetLabel(hit.position)}`, percent(hit.ability) * hit.repeats, "x", `${hit.ability.toFixed(1)}% x ${hit.repeats}`));
   const activeDmgParts = [
     part("主詞條增傷", state.dmgParts.main, "%"),
     part("隊伍/校正增傷", state.dmgParts.team, "%"),
@@ -398,9 +406,10 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
   return [
     {
       label: "攻擊區",
-      value: atkMultiplier,
-      formula: "當前攻擊力 / (角色 + 光錐基礎攻擊力)",
-      detail: `${state.finalAtk.toFixed(1)} / ${state.baseAtk.toFixed(1)}`,
+      value: state.finalAtk,
+      unit: "atk",
+      formula: "最終攻擊力",
+      detail: "攻擊力是基礎數值，不以 x 倍顯示",
       parts: [
         part("角色基礎攻擊", state.characterBaseAtk),
         part("光錐基礎攻擊", state.lightConeBaseAtk),
@@ -415,17 +424,17 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       ],
     },
     {
-      label: "倍率區",
+      label: "技能總倍率",
       value: totalAbility,
-      formula: "Σ(技能倍率 x 目標數 x 次數)",
-      detail: hits.map((hit) => `${hit.ability.toFixed(1)}% x ${hit.targets} x ${hit.repeats}`).join(" + "),
-      parts: hits.map((hit) =>
-        part(hit.label, percent(hit.ability) * hit.targets * hit.repeats, "x", `${hit.ability.toFixed(1)}% x ${hit.targets} x ${hit.repeats}`),
-      ),
+      unit: "x",
+      formula: "總倍率 = 各目標倍率總和",
+      detail: "詳細 hit 計算請看技能拆解；此處只保留可讀摘要。",
+      parts: [...targetParts, ...baseHitParts, ...interpretationParts],
     },
     {
       label: "增傷區",
       value: dmgBoost,
+      unit: "x",
       formula: "100% + 增傷幅度",
       detail: `100% + ${(state.dmgBonus + traceDmg).toFixed(2)}%`,
       parts: [part("基礎值", 100, "%"), ...activeDmgParts],
@@ -433,6 +442,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "暴擊期望",
       value: expectedCritMult,
+      unit: "x",
       formula: "100% + 暴率 x 暴傷",
       detail: `暴率 ${state.critRate.toFixed(2)}%，暴傷 ${state.critDamage.toFixed(2)}%`,
       parts: [
@@ -456,6 +466,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "防禦區",
       value: multipliers.defMult,
+      unit: "x",
       formula: "(角色等級 + 20) / ((敵人等級 + 20) x (1 - 減防/無視) + 角色等級 + 20)",
       detail: `目前減防/無視 ${multipliers.defReductionTotal.toFixed(2)}%`,
       parts: [
@@ -469,6 +480,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "抗性區",
       value: multipliers.resMult,
+      unit: "x",
       formula: "100% - (抗性 - 抗穿)",
       detail: `${state.enemyRes.toFixed(2)}% - ${state.resPen.toFixed(2)}%`,
       parts: [part("敵人冰抗性", state.enemyRes, "%"), part("抗性穿透", state.resPen, "%")],
@@ -476,6 +488,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "易傷區",
       value: multipliers.vulnMult,
+      unit: "x",
       formula: "100% + 易傷",
       detail: `${state.vulnerability.toFixed(2)}%`,
       parts: [part("基礎值", 100, "%"), part("敵人易傷", state.vulnerability, "%")],
@@ -483,6 +496,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "我方減傷區",
       value: multipliers.weakenMult,
+      unit: "x",
       formula: "100% - 我方傷害降低",
       detail: `${state.weaken.toFixed(2)}%`,
       parts: [part("基礎值", 100, "%"), part("我方傷害降低", state.weaken, "%")],
@@ -490,6 +504,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "敵方減傷區",
       value: multipliers.mitigationMult,
+      unit: "x",
       formula: "100% - 敵方減傷",
       detail: `${state.mitigation.toFixed(2)}%`,
       parts: [part("基礎值", 100, "%"), part("敵方減傷", state.mitigation, "%")],
@@ -497,15 +512,17 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     {
       label: "弱點區",
       value: multipliers.brokenMult,
+      unit: "x",
       formula: "已擊破 1 / 未擊破 0.9",
       detail: state.targetBroken ? "敵人已弱點擊破" : "敵人未弱點擊破",
       parts: [part("弱點擊破狀態", multipliers.brokenMult, "x", state.targetBroken ? "已擊破" : "未擊破")],
     },
     {
-      label: "傷害乘區總值",
-      value: damageFactorTotal,
+      label: "通用乘區倍率",
+      value: commonExpectedMultiplier,
+      unit: "x",
       formula: "增傷區 x 暴擊期望 x 防禦區 x 抗性區 x 易傷區 x 我方減傷區 x 敵方減傷區 x 弱點區",
-      detail: "不含攻擊與技能倍率",
+      detail: "不含攻擊力與技能倍率",
       parts: [
         part("增傷區", dmgBoost, "x"),
         part("暴擊期望", expectedCritMult, "x"),
@@ -518,16 +535,37 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       ],
     },
     {
-      label: "完整期望倍率",
-      value: fullExpectedMultiplier,
-      formula: "倍率區 x 增傷區 x 暴擊期望 x 防禦區 x 抗性區 x 易傷區 x 我方減傷區 x 敵方減傷區 x 弱點區",
-      detail: "不含攻擊力；多段技能使用目前結果的技能倍率區總和",
+      label: "不含攻擊力期望倍率",
+      value: expectedMultiplierWithoutAtk,
+      unit: "x",
+      formula: "技能總倍率 x 通用乘區倍率",
+      detail: "期望傷害 = 最終攻擊力 x 不含攻擊力期望倍率",
       parts: [
-        part("倍率區", totalAbility, "x"),
-        part("傷害乘區總值", damageFactorTotal, "x"),
+        part("技能總倍率", totalAbility, "x"),
+        part("通用乘區倍率", commonExpectedMultiplier, "x"),
       ],
     },
   ];
+}
+
+function summarizeHitRows(hits) {
+  const rows = new Map();
+  hits.forEach((hit) => {
+    const current = rows.get(hit.rowLabel) ?? {
+      label: hit.rowLabel,
+      value: 0,
+      ability: hit.ability,
+      targets: 0,
+      repeats: hit.repeats,
+    };
+    current.value += percent(hit.ability) * hit.targets * hit.repeats;
+    current.targets += hit.targets;
+    rows.set(hit.rowLabel, current);
+  });
+  return [...rows.values()].map((row) => ({
+    ...row,
+    note: `${row.ability.toFixed(1)}% x 目標 ${row.targets} x 次數 ${row.repeats}`,
+  }));
 }
 
 function part(label, value, unit = "", note = "") {
