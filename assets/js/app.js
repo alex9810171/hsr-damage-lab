@@ -3,6 +3,8 @@ const character = {
   name: "大黑塔",
   element: "冰",
   ultimateAtkBuff: 80,
+  traceAtk: 18,
+  traceSpeed: 5,
   traceIceDmg: 22.4,
   skills: [
     {
@@ -42,10 +44,10 @@ const character = {
 
 const relicSets = {
   none: { label: "不套用" },
-  scholar: { label: "識海迷墜的學者", skillDmg: 20, ultDmg: 20 },
+  scholar: { label: "識海迷墜的學者", critRate: 8, skillDmg: 20, ultDmg: 20, nextSkillDmgAfterUlt: 25 },
   ice: { label: "密林臥雪的獵人", dmgBonus: 10, ultCritDamage: 25 },
   izumo: { label: "出雲顯世與高天神國", atkPercent: 12, critRate: 12 },
-  rutilant: { label: "繁星競技場", basicSkillDmgWhen70Cr: 20 },
+  rutilant: { label: "繁星競技場", critRate: 8, basicSkillDmgWhen70Cr: 20 },
 };
 
 const lightCones = {
@@ -98,7 +100,6 @@ const ids = [
   "feetMainStat",
   "sphereMainStat",
   "ropeMainStat",
-  "resPen",
   "relicSet",
   "atkRolls",
   "crRolls",
@@ -113,6 +114,15 @@ const ids = [
   "twoErudition",
   "fullInterpretationTrace",
   "targetBroken",
+  "teammate1",
+  "teammate1Eidolon",
+  "teammate1Setup",
+  "teammate2",
+  "teammate2Eidolon",
+  "teammate2Setup",
+  "teammate3",
+  "teammate3Eidolon",
+  "teammate3Setup",
   "teamAtkBuff",
   "teamDmgBuff",
   "teamCrBuff",
@@ -177,7 +187,6 @@ function switchView(view) {
 
 function loadPreset() {
   const preset = {
-    resPen: 0,
     atkRolls: 4,
     crRolls: 6,
     cdRolls: 8,
@@ -188,6 +197,10 @@ function loadPreset() {
     ultimateAtkBuff: character.ultimateAtkBuff,
     interpretationStacks: 42,
     riddleStacks: 40,
+    teamAtkBuff: 0,
+    teamDmgBuff: 0,
+    teamCrBuff: 0,
+    teamCdBuff: 80,
   };
   Object.entries(preset).forEach(([key, value]) => {
     el[key].value = value;
@@ -199,6 +212,15 @@ function loadPreset() {
   el.ropeMainStat.value = "atkPercent";
   el.relicSet.value = "scholar";
   el.skillSelect.value = "enhanced";
+  el.teammate1.value = "smallHerta";
+  el.teammate1Eidolon.value = 0;
+  el.teammate1Setup.value = "none";
+  el.teammate2.value = "robin";
+  el.teammate2Eidolon.value = 0;
+  el.teammate2Setup.value = "none";
+  el.teammate3.value = "none";
+  el.teammate3Eidolon.value = 0;
+  el.teammate3Setup.value = "none";
   el.afterUltimate.checked = true;
   el.twoErudition.checked = true;
   el.fullInterpretationTrace.checked = true;
@@ -233,9 +255,11 @@ function readState(overrides = {}) {
   const atkFromRolls = atkRolls * rollValues.atkRolls;
   const ultimateAtkBuff = Number(overrides.ultimateAtkBuff ?? el.ultimateAtkBuff.value);
   const afterUltimate = overrides.afterUltimate ?? el.afterUltimate.checked;
+  const twoErudition = overrides.twoErudition ?? el.twoErudition.checked;
 
   const atkParts = {
     main: sumPart(mainParts, "atkPercent"),
+    trace: character.traceAtk,
     team: Number(overrides.teamAtkBuff ?? el.teamAtkBuff.value),
     relic: set.atkPercent ?? 0,
     rolls: atkFromRolls,
@@ -247,7 +271,7 @@ function readState(overrides = {}) {
     base: baseStats.critRate,
     main: sumPart(mainParts, "critRate"),
     team: Number(overrides.teamCrBuff ?? el.teamCrBuff.value),
-    relic: set.critRate ?? 0,
+    relic: relicKey === "izumo" ? (twoErudition ? set.critRate ?? 0 : 0) : set.critRate ?? 0,
     rolls: Number(overrides.crRolls ?? el.crRolls.value) * rollValues.crRolls,
   };
   let critRateRaw = Object.values(critRateParts).reduce((total, value) => total + value, 0);
@@ -271,6 +295,7 @@ function readState(overrides = {}) {
     relicBase: set.dmgBonus ?? 0,
     relicSkill: skill.type === "戰技" ? set.skillDmg ?? 0 : 0,
     relicUltimate: skill.type === "終結技" ? set.ultDmg ?? 0 : 0,
+    relicAfterUltimateSkill: afterUltimate && skill.type === "戰技" ? set.nextSkillDmgAfterUlt ?? 0 : 0,
     relicConditional:
       (skill.type === "普攻" || skill.type === "戰技") && set.basicSkillDmgWhen70Cr && critRateRaw >= 70
         ? set.basicSkillDmgWhen70Cr
@@ -301,7 +326,7 @@ function readState(overrides = {}) {
     critDamage,
     dmgParts,
     dmgBonus,
-    resPen: Number(overrides.resPen ?? el.resPen.value),
+    resPen: Number(overrides.resPen ?? 0),
     characterLevel: Number(overrides.characterLevel ?? el.characterLevel.value),
     enemyLevel: Number(overrides.enemyLevel ?? el.enemyLevel.value),
     defReduction: Number(overrides.defReduction ?? el.defReduction.value),
@@ -313,7 +338,7 @@ function readState(overrides = {}) {
     enemyCount: Number(overrides.enemyCount ?? el.enemyCount.value),
     interpretationStacks: Number(overrides.interpretationStacks ?? el.interpretationStacks.value),
     riddleStacks: Number(overrides.riddleStacks ?? el.riddleStacks.value),
-    twoErudition: overrides.twoErudition ?? el.twoErudition.checked,
+    twoErudition,
     fullInterpretationTrace: overrides.fullInterpretationTrace ?? el.fullInterpretationTrace.checked,
     targetBroken: overrides.targetBroken ?? el.targetBroken.checked,
   };
@@ -439,8 +464,8 @@ function renderOptimization(baseResult) {
     ["暴率詞條 +1", { crRolls: Number(el.crRolls.value) + 1 }],
     ["暴傷詞條 +1", { cdRolls: Number(el.cdRolls.value) + 1 }],
     ["固定攻擊詞條 +1", { flatAtkRolls: Number(el.flatAtkRolls.value) + 1 }],
-    ["抗穿 +10%", { resPen: Number(el.resPen.value) + 10 }],
     ["防禦降低 +10%", { defReduction: Number(el.defReduction.value) + 10 }],
+    ["易傷 +10%", { vulnerability: Number(el.vulnerability.value) + 10 }],
   ].map(([label, override]) => {
     const next = calculateDamage(override).expected;
     return { label, gain: (next / baseResult.expected - 1) * 100 };
@@ -466,23 +491,27 @@ function renderFormulaDebug(result) {
     "非暴擊傷害 = 單段基礎傷害 x 增傷乘區 x 防禦乘區 x 抗性乘區 x 易傷乘區 x 我方傷害降低乘區 x 敵方減傷乘區 x 弱點擊破乘區",
     "暴擊傷害 = 非暴擊傷害 x (1 + 暴擊傷害)",
     "期望傷害 = 非暴擊傷害 x (1 + min(暴擊率, 100%) x 暴擊傷害)",
+    "強化戰技主目標解讀達 42 層時，本次強化戰技增傷 +50%",
+    "終結技每持有 1 層謎底，本次終結技倍率 +1%",
     "",
     "面板",
     `套裝 = ${state.set.label}`,
     `光錐 = ${state.lightCone.label}`,
     `主詞條 = 軀幹 ${state.selectedMains.body.label} / 腳部 ${state.selectedMains.feet.label} / 位面球 ${state.selectedMains.sphere.label} / 連結繩 ${state.selectedMains.rope.label}`,
+    `大黑塔總屬性加成 = 攻擊力 ${pct(character.traceAtk)} / 速度 +${character.traceSpeed} / 冰屬性傷害 ${pct(character.traceIceDmg)}`,
     `基礎攻擊 = 角色 ${state.characterBaseAtk.toFixed(1)} + 光錐 ${state.lightConeBaseAtk.toFixed(1)} = ${state.baseAtk.toFixed(1)}`,
-    `總攻擊% = 主詞條 ${pct(state.atkParts.main)} + 隊友 ${pct(state.atkParts.team)} + 套裝 ${pct(state.atkParts.relic)} + 副詞條 ${pct(state.atkParts.rolls)} + 終結技 ${pct(state.atkParts.ultimate)} = ${pct(state.atkPercent)}`,
+    `總攻擊% = 主詞條 ${pct(state.atkParts.main)} + 行跡 ${pct(state.atkParts.trace)} + 隊友 ${pct(state.atkParts.team)} + 套裝 ${pct(state.atkParts.relic)} + 副詞條 ${pct(state.atkParts.rolls)} + 終結技 ${pct(state.atkParts.ultimate)} = ${pct(state.atkPercent)}`,
     `固定攻擊 = 手部主詞條 ${state.handFlatAtk.toFixed(1)} + 副詞條 ${state.flatAtkFromRolls.toFixed(1)} = ${state.flatAtk.toFixed(1)}`,
     `最終攻擊力 = ${state.baseAtk.toFixed(1)} x (1 + ${pct(state.atkPercent)}) + ${state.flatAtk.toFixed(1)} = ${state.finalAtk.toFixed(1)}`,
     `暴擊率 = 基礎 ${pct(state.critRateParts.base)} + 主詞條 ${pct(state.critRateParts.main)} + 隊友 ${pct(state.critRateParts.team)} + 套裝 ${pct(state.critRateParts.relic)} + 副詞條 ${pct(state.critRateParts.rolls)} = ${pct(state.critRateRaw)}，計算用 ${pct(state.critRate)}`,
     `暴擊傷害 = 基礎 ${pct(state.critDamageParts.base)} + 主詞條 ${pct(state.critDamageParts.main)} + 隊友 ${pct(state.critDamageParts.team)} + 套裝 ${pct(state.critDamageParts.relic)} + 副詞條 ${pct(state.critDamageParts.rolls)} = ${pct(state.critDamage)}`,
-    `增傷% = 主詞條 ${pct(state.dmgParts.main)} + 隊友 ${pct(state.dmgParts.team)} + 行跡冰傷 ${pct(state.dmgParts.trace)} + 套裝基礎 ${pct(state.dmgParts.relicBase)} + 套裝技能 ${pct(state.dmgParts.relicSkill)} + 套裝終結技 ${pct(state.dmgParts.relicUltimate)} + 套裝條件 ${pct(state.dmgParts.relicConditional)} + 42層行跡 ${pct(result.traceDmg)} = ${pct(state.dmgBonus + result.traceDmg)}`,
+    `增傷% = 主詞條 ${pct(state.dmgParts.main)} + 隊友 ${pct(state.dmgParts.team)} + 行跡冰傷 ${pct(state.dmgParts.trace)} + 套裝基礎 ${pct(state.dmgParts.relicBase)} + 套裝技能 ${pct(state.dmgParts.relicSkill)} + 套裝終結技 ${pct(state.dmgParts.relicUltimate)} + 終結技後下次戰技 ${pct(state.dmgParts.relicAfterUltimateSkill)} + 繁星條件 ${pct(state.dmgParts.relicConditional)} + 42層行跡 ${pct(result.traceDmg)} = ${pct(state.dmgBonus + result.traceDmg)}`,
     "",
     "乘區",
     `增傷乘區 = 1 + ${pct(state.dmgBonus + result.traceDmg)} = ${dec(result.dmgBoost)}`,
+    `42層強化戰技增傷 = ${state.skill.enhanced && state.fullInterpretationTrace && state.interpretationStacks >= 42 ? "已啟用" : "未啟用"}，${pct(result.traceDmg)}`,
     `防禦乘區 = (角色等級 + 20) / ((敵人等級 + 20) x (1 - 防禦降低/無視) + 角色等級 + 20) = (${state.characterLevel} + 20) / ((${state.enemyLevel} + 20) x (1 - ${pct(multipliers.defReductionTotal)}) + ${state.characterLevel} + 20) = ${dec(multipliers.defMult)}`,
-    `抗性乘區 = 1 - (敵人抗性 - 抗性穿透) = 1 - (${pct(state.enemyRes)} - ${pct(state.resPen)}) = ${dec(multipliers.resMult)}`,
+    `抗性乘區 = 1 - (敵人抗性 - 特殊抗性穿透) = 1 - (${pct(state.enemyRes)} - ${pct(state.resPen)}) = ${dec(multipliers.resMult)}`,
     `易傷乘區 = 1 + ${pct(state.vulnerability)} = ${dec(multipliers.vulnMult)}`,
     `我方傷害降低乘區 = 1 - ${pct(state.weaken)} = ${dec(multipliers.weakenMult)}`,
     `敵方減傷乘區 = 1 - ${pct(state.mitigation)} = ${dec(multipliers.mitigationMult)}`,

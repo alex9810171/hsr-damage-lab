@@ -28,14 +28,14 @@
 
           <div class="form-grid">
             <label>
-              <span>角色等級</span>
-              <input id="characterLevel" type="number" min="1" max="80" value="80" />
-            </label>
-            <label>
               <span>角色</span>
               <select id="characterSelect">
                 <option value="theHerta">大黑塔</option>
               </select>
+            </label>
+            <label>
+              <span>角色等級</span>
+              <input id="characterLevel" type="number" min="1" max="80" value="80" />
             </label>
             <label>
               <span>光錐</span>
@@ -76,10 +76,6 @@
                 <option value="breakEffect">擊破特攻</option>
               </select>
             </label>
-            <label>
-              <span>抗性穿透 %</span>
-              <input id="resPen" type="number" value="0" step="0.1" />
-            </label>
           </div>
 
           <div class="section-divider"></div>
@@ -91,10 +87,10 @@
             <span>套裝效果</span>
             <select id="relicSet">
               <option value="none">不套用</option>
-              <option value="scholar">識海迷墜的學者：戰技/終結技增傷 20%</option>
+              <option value="scholar">識海迷墜的學者：暴率 8%、戰技/終結技增傷</option>
               <option value="ice">密林臥雪的獵人：冰傷 10%、終結技後暴傷 25%</option>
               <option value="izumo">出雲顯世與高天神國：攻擊 12%、同命途暴率 12%</option>
-              <option value="rutilant">繁星競技場：暴率達 70% 時普攻/戰技增傷 20%</option>
+              <option value="rutilant">繁星競技場：暴率 8%、達 70% 時普攻/戰技增傷</option>
             </select>
           </label>
 
@@ -214,19 +210,94 @@
           <div class="view" id="teamView">
             <div class="team-grid">
               <label>
-                <span>隊友攻擊% Buff</span>
+                <span>隊友 1</span>
+                <select id="teammate1">
+                  <option value="none">未選擇</option>
+                  <option value="custom">自訂隊友</option>
+                  <option value="jade">翡翠</option>
+                  <option value="smallHerta">黑塔</option>
+                  <option value="robin">知更鳥</option>
+                  <option value="ruanMei">阮・梅</option>
+                  <option value="pela">佩拉</option>
+                </select>
+              </label>
+              <label>
+                <span>隊友 1 星魂</span>
+                <input id="teammate1Eidolon" type="number" min="0" max="6" value="0" />
+              </label>
+              <label>
+                <span>隊友 1 裝備效果</span>
+                <select id="teammate1Setup">
+                  <option value="none">未套用</option>
+                  <option value="signature">專武效果</option>
+                  <option value="relic">輔助遺器效果</option>
+                  <option value="signatureRelic">專武 + 輔助遺器</option>
+                </select>
+              </label>
+              <label>
+                <span>隊友 2</span>
+                <select id="teammate2">
+                  <option value="none">未選擇</option>
+                  <option value="custom">自訂隊友</option>
+                  <option value="jade">翡翠</option>
+                  <option value="smallHerta">黑塔</option>
+                  <option value="robin">知更鳥</option>
+                  <option value="ruanMei">阮・梅</option>
+                  <option value="pela">佩拉</option>
+                </select>
+              </label>
+              <label>
+                <span>隊友 2 星魂</span>
+                <input id="teammate2Eidolon" type="number" min="0" max="6" value="0" />
+              </label>
+              <label>
+                <span>隊友 2 裝備效果</span>
+                <select id="teammate2Setup">
+                  <option value="none">未套用</option>
+                  <option value="signature">專武效果</option>
+                  <option value="relic">輔助遺器效果</option>
+                  <option value="signatureRelic">專武 + 輔助遺器</option>
+                </select>
+              </label>
+              <label>
+                <span>隊友 3</span>
+                <select id="teammate3">
+                  <option value="none">未選擇</option>
+                  <option value="custom">自訂隊友</option>
+                  <option value="jade">翡翠</option>
+                  <option value="smallHerta">黑塔</option>
+                  <option value="robin">知更鳥</option>
+                  <option value="ruanMei">阮・梅</option>
+                  <option value="pela">佩拉</option>
+                </select>
+              </label>
+              <label>
+                <span>隊友 3 星魂</span>
+                <input id="teammate3Eidolon" type="number" min="0" max="6" value="0" />
+              </label>
+              <label>
+                <span>隊友 3 裝備效果</span>
+                <select id="teammate3Setup">
+                  <option value="none">未套用</option>
+                  <option value="signature">專武效果</option>
+                  <option value="relic">輔助遺器效果</option>
+                  <option value="signatureRelic">專武 + 輔助遺器</option>
+                </select>
+              </label>
+              <label>
+                <span>攻擊% Buff 校正</span>
                 <input id="teamAtkBuff" type="number" value="0" step="0.1" />
               </label>
               <label>
-                <span>隊友增傷 %</span>
+                <span>增傷 Buff 校正</span>
                 <input id="teamDmgBuff" type="number" value="0" step="0.1" />
               </label>
               <label>
-                <span>隊友暴率 %</span>
+                <span>暴率 Buff 校正</span>
                 <input id="teamCrBuff" type="number" value="0" step="0.1" />
               </label>
               <label>
-                <span>隊友暴傷 %</span>
+                <span>暴傷 Buff 校正</span>
                 <input id="teamCdBuff" type="number" value="80" step="0.1" />
               </label>
               <label>
