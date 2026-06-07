@@ -53,8 +53,8 @@
             <label>
               <span>軀幹主詞條</span>
               <select id="bodyMainStat">
-                <option value="critDamage">暴擊傷害 64.8%</option>
                 <option value="critRate">暴擊率 32.4%</option>
+                <option value="critDamage">暴擊傷害 64.8%</option>
                 <option value="atkPercent">攻擊力 43.2%</option>
               </select>
             </label>
@@ -112,19 +112,19 @@
           <div class="substat-grid">
             <label>
               <span>攻擊% 詞條數</span>
-              <input id="atkRolls" type="number" min="0" value="4" />
+              <input id="atkRolls" type="number" min="0" value="5" />
             </label>
             <label>
               <span>暴率 詞條數</span>
-              <input id="crRolls" type="number" min="0" value="6" />
+              <input id="crRolls" type="number" min="0" value="15" />
             </label>
             <label>
               <span>暴傷 詞條數</span>
-              <input id="cdRolls" type="number" min="0" value="8" />
+              <input id="cdRolls" type="number" min="0" value="10" />
             </label>
             <label>
               <span>固定攻擊 詞條數</span>
-              <input id="flatAtkRolls" type="number" min="0" value="2" />
+              <input id="flatAtkRolls" type="number" min="0" value="0" />
             </label>
           </div>
 
@@ -150,15 +150,11 @@
               </label>
               <label>
                 <span>謎底層數</span>
-                <input id="riddleStacks" type="number" min="0" max="99" value="40" />
+                <input id="riddleStacks" type="number" min="0" max="99" value="99" />
               </label>
               <label>
                 <span>敵人數量</span>
                 <input id="enemyCount" type="number" min="1" max="5" value="3" />
-              </label>
-              <label>
-                <span>終結技攻擊 Buff %</span>
-                <input id="ultimateAtkBuff" type="number" value="80" step="0.1" />
               </label>
             </div>
 

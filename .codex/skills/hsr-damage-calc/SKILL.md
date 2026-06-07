@@ -69,9 +69,9 @@ Do not expose player-facing RES PEN as normal equipment unless a character/eidol
 ## The Herta Checklist
 
 - Trace stat bonuses: ATK +18%, SPD +5, Ice DMG +22.4%.
-- Ultimate grants ATK buff; current UI default is 80%, user-editable.
+- Ultimate grants ATK buff from character data; do not expose this as a normal player-editable equipment field.
 - Enhanced Skill: if main target Interpretation reaches 42, The Herta DMG +50% for this attack.
-- Riddle: each Interpretation stack applied grants 1 Riddle, max 99. Ultimate multiplier +1% per Riddle stack.
+- Riddle: each Interpretation stack applied grants 1 Riddle, max 99. Ultimate multiplier +1% per Riddle stack. Default test value can be 99.
 - Team condition: 2+ Erudition characters changes Interpretation scaling and may activate same-path planar conditions.
 
 ## Relic Checklist

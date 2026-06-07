@@ -80,7 +80,7 @@ export function readState(data, inputs, overrides = {}) {
   const flatAtk = baseStats.handFlatAtk + flatAtkFromRolls;
   const atkRolls = Number(overrides.atkRolls ?? inputs.atkRolls);
   const atkFromRolls = atkRolls * rollValues.atkRolls;
-  const ultimateAtkBuff = Number(overrides.ultimateAtkBuff ?? inputs.ultimateAtkBuff);
+  const ultimateAtkBuff = Number(overrides.ultimateAtkBuff ?? character.ultimateAtkBuff);
   const afterUltimate = overrides.afterUltimate ?? inputs.afterUltimate;
   const twoErudition = overrides.twoErudition ?? inputs.twoErudition;
   const teamAutoBuffs = team ? teamBuffs(data, team) : emptyBuffs();
@@ -264,9 +264,14 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       label: "暴擊期望",
       value: expectedCritMult,
       formula: "100% + 暴率 x 暴傷",
-      detail: `100% + ${state.critRate.toFixed(2)}% x ${state.critDamage.toFixed(2)}%`,
+      detail: `暴率 ${state.critRate.toFixed(2)}%，暴傷 ${state.critDamage.toFixed(2)}%`,
     },
-    { label: "防禦區", value: multipliers.defMult, formula: "防禦乘區", detail: "" },
+    {
+      label: "防禦區",
+      value: multipliers.defMult,
+      formula: "防禦乘區",
+      detail: `目前減防/無視 ${multipliers.defReductionTotal.toFixed(2)}%`,
+    },
     { label: "抗性區", value: multipliers.resMult, formula: "100% - (抗性 - 抗穿)", detail: "" },
     { label: "易傷區", value: multipliers.vulnMult, formula: "100% + 易傷", detail: "" },
     { label: "我方減傷區", value: multipliers.weakenMult, formula: "100% - 我方傷害降低", detail: "" },

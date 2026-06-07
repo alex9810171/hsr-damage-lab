@@ -21,7 +21,6 @@ export function createUI(data) {
     "interpretationStacks",
     "riddleStacks",
     "enemyCount",
-    "ultimateAtkBuff",
     "afterUltimate",
     "twoErudition",
     "fullInterpretationTrace",
@@ -144,26 +143,25 @@ export function createUI(data) {
 
   function loadPreset() {
     const preset = {
-      atkRolls: 4,
-      crRolls: 6,
-      cdRolls: 8,
-      flatAtkRolls: 2,
+      atkRolls: 5,
+      crRolls: 15,
+      cdRolls: 10,
+      flatAtkRolls: 0,
       teamAtkBuff: 0,
       teamDmgBuff: 0,
       teamCrBuff: 0,
       teamCdBuff: 80,
       enemyLevel: 95,
       enemyCount: 3,
-      ultimateAtkBuff: data.character.ultimateAtkBuff,
       interpretationStacks: 42,
-      riddleStacks: 40,
+      riddleStacks: 99,
     };
     Object.entries(preset).forEach(([key, value]) => {
       el[key].value = value;
     });
     el.teamPreset.value = "theHertaDefault";
     el.lightCone.value = "signature";
-    el.bodyMainStat.value = "critDamage";
+    el.bodyMainStat.value = "critRate";
     el.feetMainStat.value = "atkPercent";
     el.sphereMainStat.value = "iceDmg";
     el.ropeMainStat.value = "atkPercent";
