@@ -57,6 +57,12 @@ export function createUI(data) {
   const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
   function init() {
+    const missing = Object.entries(el)
+      .filter(([, node]) => !node)
+      .map(([id]) => id);
+    if (missing.length) {
+      console.warn(`Missing UI elements: ${missing.join(", ")}`);
+    }
     populateSkills();
     populateTeams();
     document.querySelectorAll("input, select").forEach((input) => {
@@ -66,9 +72,9 @@ export function createUI(data) {
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", () => switchView(tab.dataset.view));
     });
-    el.weaknessPreset.addEventListener("change", applyWeaknessPreset);
+    el.weaknessPreset?.addEventListener("change", applyWeaknessPreset);
     document.getElementById("presetButton").addEventListener("click", loadPreset);
-    el.copyDebugButton.addEventListener("click", copyDebugText);
+    el.copyDebugButton?.addEventListener("click", copyDebugText);
     loadPreset();
     applyWeaknessPreset();
     calculate();
@@ -99,6 +105,7 @@ export function createUI(data) {
   }
 
   function populateTeams() {
+    if (!el.teamPreset) return;
     el.teamPreset.replaceChildren();
     Object.entries(data.teams).forEach(([id, team]) => {
       const option = document.createElement("option");
@@ -115,20 +122,23 @@ export function createUI(data) {
   }
 
   function applyTeamToFields() {
+    if (!el.teamPreset) return;
     const team = data.teams[el.teamPreset.value];
     if (!team) return;
     team.members.slice(1).forEach((member, index) => {
       const slot = index + 1;
-      el[`teammate${slot}`].value = member.id;
-      el[`teammate${slot}Eidolon`].value = member.eidolon;
-      el[`teammate${slot}Setup`].value =
+      setValue(`teammate${slot}`, member.id);
+      setValue(`teammate${slot}Eidolon`, member.eidolon);
+      setValue(
+        `teammate${slot}Setup`,
         member.signatureSuperimposition > 0 && member.planarSet !== "none"
           ? "signatureRelic"
           : member.signatureSuperimposition > 0
             ? "signature"
             : member.planarSet !== "none"
               ? "relic"
-              : "none";
+              : "none",
+      );
     });
   }
 
@@ -157,41 +167,41 @@ export function createUI(data) {
       riddleStacks: 99,
     };
     Object.entries(preset).forEach(([key, value]) => {
-      el[key].value = value;
+      setValue(key, value);
     });
-    el.teamPreset.value = "theHertaDefault";
-    el.lightCone.value = "signature";
-    el.bodyMainStat.value = "critRate";
-    el.feetMainStat.value = "atkPercent";
-    el.sphereMainStat.value = "iceDmg";
-    el.ropeMainStat.value = "atkPercent";
-    el.cavernSet.value = "scholar";
-    el.planarSet.value = "izumo";
-    el.skillSelect.value = "enhanced";
+    setValue("teamPreset", "theHertaDefault");
+    setValue("lightCone", "signature");
+    setValue("bodyMainStat", "critRate");
+    setValue("feetMainStat", "atkPercent");
+    setValue("sphereMainStat", "iceDmg");
+    setValue("ropeMainStat", "atkPercent");
+    setValue("cavernSet", "scholar");
+    setValue("planarSet", "izumo");
+    setValue("skillSelect", "enhanced");
     applyTeamToFields();
-    el.afterUltimate.checked = true;
-    el.twoErudition.checked = true;
-    el.fullInterpretationTrace.checked = true;
-    el.targetBroken.checked = false;
+    setChecked("afterUltimate", true);
+    setChecked("twoErudition", true);
+    setChecked("fullInterpretationTrace", true);
+    setChecked("targetBroken", false);
     calculate();
   }
 
   function applyWeaknessPreset() {
-    if (el.weaknessPreset.value === "weak") el.enemyRes.value = 0;
-    if (el.weaknessPreset.value === "neutral") el.enemyRes.value = 20;
+    if (el.weaknessPreset?.value === "weak") setValue("enemyRes", 0);
+    if (el.weaknessPreset?.value === "neutral") setValue("enemyRes", 20);
     calculate();
   }
 
   function calculate() {
     const result = calculateDamage(data, readInputs());
-    el.expectedDamage.textContent = fmt(result.expected);
-    el.critDamageResult.textContent = fmt(result.crit);
-    el.normalDamageResult.textContent = fmt(result.normal);
-    el.finalAtk.textContent = fmt(result.state.finalAtk);
+    setText("expectedDamage", fmt(result.expected));
+    setText("critDamageResult", fmt(result.crit));
+    setText("normalDamageResult", fmt(result.normal));
+    setText("finalAtk", fmt(result.state.finalAtk));
     renderBreakdown(result);
     renderFactorSummary(result);
     renderOptimization(result);
-    el.formulaDebug.textContent = renderFormulaDebug(result);
+    setText("formulaDebug", renderFormulaDebug(result));
   }
 
   function renderBreakdown(result) {
@@ -238,6 +248,7 @@ export function createUI(data) {
   }
 
   function renderFactorSummary(result) {
+    if (!el.factorSummary) return;
     el.factorSummary.innerHTML = result.factorSummary
       .map(
         (factor) => `
@@ -256,13 +267,25 @@ export function createUI(data) {
   async function copyDebugText() {
     try {
       await navigator.clipboard.writeText(el.formulaDebug.textContent);
-      el.copyDebugButton.textContent = "已複製";
+      setText("copyDebugButton", "已複製");
     } catch {
-      el.copyDebugButton.textContent = "無法複製";
+      setText("copyDebugButton", "無法複製");
     }
     window.setTimeout(() => {
-      el.copyDebugButton.textContent = "複製公式";
+      setText("copyDebugButton", "複製公式");
     }, 1200);
+  }
+
+  function setValue(id, value) {
+    if (el[id]) el[id].value = value;
+  }
+
+  function setChecked(id, value) {
+    if (el[id]) el[id].checked = value;
+  }
+
+  function setText(id, value) {
+    if (el[id]) el[id].textContent = value;
   }
 
   return { init };
