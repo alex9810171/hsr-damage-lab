@@ -1,0 +1,44 @@
+{
+  "theHertaDefault": {
+    "label": "2+1 大黑塔 / 那刻夏 / 緹寶 / 風堇",
+    "notes": "第一版先資料化隊伍配置。露莎卡給一號位攻擊加成已接入；其他隊友技能、星魂、專武效果待逐項核對後接入。",
+    "members": [
+      {
+        "slot": 1,
+        "id": "theHerta",
+        "name": "大黑塔",
+        "eidolon": 2,
+        "signatureSuperimposition": 1,
+        "cavernSet": "wind",
+        "planarSet": "vonwacq"
+      },
+      {
+        "slot": 2,
+        "id": "anaxa",
+        "name": "那刻夏",
+        "eidolon": 0,
+        "signatureSuperimposition": 0,
+        "cavernSet": "wind",
+        "planarSet": "lushaka"
+      },
+      {
+        "slot": 3,
+        "id": "tribbie",
+        "name": "緹寶",
+        "eidolon": 1,
+        "signatureSuperimposition": 0,
+        "cavernSet": "warriorGoddess",
+        "planarSet": "lushaka"
+      },
+      {
+        "slot": 4,
+        "id": "hyacine",
+        "name": "風堇",
+        "eidolon": 0,
+        "signatureSuperimposition": 1,
+        "cavernSet": "none",
+        "planarSet": "none"
+      }
+    ]
+  }
+}

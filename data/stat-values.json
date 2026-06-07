@@ -1,0 +1,33 @@
+{
+  "baseStats": {
+    "handFlatAtk": 352.8,
+    "critRate": 5,
+    "critDamage": 50
+  },
+  "mainStatValues": {
+    "bodyMainStat": {
+      "critDamage": { "label": "暴擊傷害", "critDamage": 64.8 },
+      "critRate": { "label": "暴擊率", "critRate": 32.4 },
+      "atkPercent": { "label": "攻擊力", "atkPercent": 43.2 }
+    },
+    "feetMainStat": {
+      "atkPercent": { "label": "攻擊力", "atkPercent": 43.2 },
+      "speed": { "label": "速度" }
+    },
+    "sphereMainStat": {
+      "iceDmg": { "label": "冰屬性傷害", "dmgBonus": 38.88 },
+      "atkPercent": { "label": "攻擊力", "atkPercent": 43.2 }
+    },
+    "ropeMainStat": {
+      "atkPercent": { "label": "攻擊力", "atkPercent": 43.2 },
+      "energyRegen": { "label": "能量恢復效率" },
+      "breakEffect": { "label": "擊破特攻" }
+    }
+  },
+  "rollValues": {
+    "atkRolls": 3.89,
+    "crRolls": 2.92,
+    "cdRolls": 5.83,
+    "flatAtkRolls": 19
+  }
+}

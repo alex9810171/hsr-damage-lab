@@ -1,6 +1,6 @@
 # 星穹鐵道傷害試算
 
-第一版是純靜態網站，先支援大黑塔單次傷害計算。直接用瀏覽器開啟 `index.html` 即可使用，也可以部署到 GitHub Pages。
+第一版是純靜態網站，先支援大黑塔單次傷害計算。資料以 JSON 載入，建議透過 GitHub Pages 或本機靜態伺服器開啟。
 
 線上網站：https://alex9810171.github.io/hsr-damage-lab/
 
@@ -15,11 +15,22 @@ hsr-damage-lab/
 ├── docs/
 │   ├── project-notes.md
 │   └── roadmap.md
+├── data/
+│   ├── characters/
+│   │   └── the-herta.json
+│   ├── light-cones.json
+│   ├── relic-sets.json
+│   ├── stat-values.json
+│   └── teams.json
 └── assets/
     ├── css/
     │   └── styles.css
     └── js/
-        └── app.js
+        ├── app.js
+        ├── calculator.js
+        ├── data-loader.js
+        ├── formula-debug.js
+        └── ui.js
 ```
 
 ## 已支援
@@ -29,12 +40,13 @@ hsr-damage-lab/
 - 遺器 2 件/4 件套裝效果與副詞條數量的粗估
 - 終結技後攻擊力提高、2 智識隊伍、42 層解讀行跡增傷等情境開關
 - 組隊來源欄位雛形：隊友、星魂、專武、輔助遺器效果
+- 指定隊伍預設：2+1 大黑塔、0+0 那刻夏、1+0 緹寶、0+1 風堇
 - 敵人等級、防禦降低、防禦無視、抗性、易傷、減傷、弱點擊破
 - 以目前面板比較下一步最佳補強方向
 
 ## 資料策略
 
-目前角色資料寫在 `assets/js/app.js` 的 `character` 物件。之後要支援多角色時，建議改成 `data/characters/the-herta.json` 這類資料檔，再由介面載入角色。
+目前角色、光錐、遺器、主詞條與隊伍資料放在 `data/`，計算邏輯放在 `assets/js/calculator.js`。
 
 ## GitHub Pages
 

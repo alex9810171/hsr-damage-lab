@@ -1,0 +1,61 @@
+{
+  "id": "1401",
+  "name": "大黑塔",
+  "element": "ice",
+  "path": "erudition",
+  "ultimateAtkBuff": 80,
+  "traceStats": {
+    "atkPercent": 18,
+    "speed": 5,
+    "iceDmg": 22.4
+  },
+  "baseStats": {
+    "80": {
+      "atk": 679
+    }
+  },
+  "skills": [
+    {
+      "id": "basic",
+      "name": "普攻：開竅了嗎",
+      "type": "basic",
+      "displayType": "普攻",
+      "hits": [{ "label": "指定單體", "multiplier": 140, "targets": 1 }]
+    },
+    {
+      "id": "skill",
+      "name": "戰技：格局打開",
+      "type": "skill",
+      "displayType": "戰技",
+      "hits": [
+        { "label": "主目標", "multiplier": 88, "targets": 1 },
+        { "label": "主目標及相鄰目標，重複 2 次", "multiplier": 88, "targets": 3, "repeats": 2 }
+      ]
+    },
+    {
+      "id": "enhanced",
+      "name": "強化戰技：我有一個大膽的想法",
+      "type": "skill",
+      "displayType": "戰技",
+      "enhanced": true,
+      "hits": [
+        { "label": "主目標", "multiplier": 100, "targets": 1, "interpretation": "main" },
+        {
+          "label": "主目標及相鄰目標，重複 2 次",
+          "multiplier": 100,
+          "targets": 3,
+          "repeats": 2,
+          "interpretation": "adjacent"
+        },
+        { "label": "敵方全體收尾", "multiplier": 50, "targets": "all" }
+      ]
+    },
+    {
+      "id": "ultimate",
+      "name": "終結技：早說了是魔法吧",
+      "type": "ultimate",
+      "displayType": "終結技",
+      "hits": [{ "label": "敵方全體", "multiplier": 250, "targets": "all", "riddle": true }]
+    }
+  ]
+}

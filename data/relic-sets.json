@@ -1,0 +1,18 @@
+{
+  "none": { "label": "不套用" },
+  "scholar": {
+    "label": "識海迷墜的學者",
+    "critRate": 8,
+    "skillDmg": 20,
+    "ultDmg": 20,
+    "nextSkillDmgAfterUlt": 25
+  },
+  "ice": { "label": "密林臥雪的獵人", "dmgBonus": 10, "ultCritDamage": 25 },
+  "izumo": { "label": "出雲顯世與高天神國", "atkPercent": 12, "critRate": 12 },
+  "rutilant": { "label": "繁星競技場", "critRate": 8, "basicSkillDmgWhen70Cr": 20 },
+  "wind": { "label": "晨昏交界的翔鷹", "windDmg": 10, "actionAdvanceAfterUltimate": 25 },
+  "vonwacq": { "label": "生命的翁瓦克", "energyRegen": 5, "actionAdvanceAtSpeed": 120 },
+  "lushaka": { "label": "沉陸海域露莎卡", "energyRegen": 5, "firstSlotAtkIfNotFirst": 12 },
+  "valorous": { "label": "風舉雲飛的勇烈", "critRate": 6, "ultimateDmgAfterFollowUp": 36 },
+  "warriorGoddess": { "label": "女武神套裝", "notes": "待核對正式套裝效果後接入計算" }
+}

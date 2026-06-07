@@ -13,23 +13,26 @@
 - 純靜態網站，不需要 build step。
 - 入口檔案是 `index.html`。
 - 樣式放在 `assets/css/styles.css`。
-- 計算邏輯與資料暫放在 `assets/js/app.js`。
+- 計算入口在 `assets/js/app.js`。
+- 計算邏輯在 `assets/js/calculator.js`。
+- 公式 Debug 在 `assets/js/formula-debug.js`。
+- UI 讀寫在 `assets/js/ui.js`。
+- 遊戲資料放在 `data/`。
 - 第一版 UI 使用繁體中文。
 - 專案資料夾名稱：`hsr-damage-lab`。
 - 線上網站：https://alex9810171.github.io/hsr-damage-lab/
 
 ## 目前資料模型
 
-角色資料目前直接寫在 `assets/js/app.js`：
+角色與裝備資料目前已拆到 `data/`：
 
-- `character`：大黑塔技能、屬性、行跡數值。
-- `relicSets`：遺器套裝效果。
-- `lightCones`：光錐名稱與基礎攻擊。
-- `mainStatValues`：五星 +15 遺器主詞條數值。
-- `baseStats`：大黑塔 Lv.80 基礎攻擊、手部固定攻擊、基礎暴率、基礎暴傷。
-- `rollValues`：副詞條平均值。
+- `data/characters/the-herta.json`：大黑塔技能、屬性、行跡數值。
+- `data/relic-sets.json`：遺器/位面套裝效果。
+- `data/light-cones.json`：光錐名稱與基礎攻擊。
+- `data/stat-values.json`：主詞條、副詞條、基礎暴率/暴傷、手部固定攻擊。
+- `data/teams.json`：隊伍預設。
 
-未來支援多角色時，建議改成：
+目前資料結構：
 
 ```text
 data/
@@ -37,7 +40,8 @@ data/
 │   └── the-herta.json
 ├── light-cones.json
 ├── relic-sets.json
-└── stat-values.json
+├── stat-values.json
+└── teams.json
 ```
 
 ## 輸入設計決策
@@ -112,7 +116,7 @@ data/
 - 遺器主詞條只支援輸出相關欄位，速度、能量恢復、擊破特攻目前不進傷害公式。
 - 副詞條用平均值估算，尚未支援精準小詞條檔位。
 - 大黑塔技能倍率與行跡效果目前是手動內建資料，尚未建立資料來源更新流程。
-- 組隊 UI 已改為隊友、星魂、專武、輔助遺器效果的來源式欄位，但各隊友的精確效果仍尚未資料化；目前仍使用 Buff 校正欄位進入計算。
+- 組隊 UI 已改為隊友、星魂、專武、輔助遺器效果的來源式欄位；目前已建立 2+1 大黑塔、0+0 那刻夏、1+0 緹寶、0+1 風堇預設。露莎卡的一號位攻擊加成已接入，各隊友技能/星魂/專武精確效果仍待資料化。
 - 未接入測試框架，目前靠公式 Debug 人工檢查。
 
 ## 下一步建議
@@ -121,11 +125,9 @@ data/
 2. 建立 GitHub repo：`hsr-damage-lab`。
 3. 初始化 git，commit 第一版並推送。
 4. 到 GitHub Pages 啟用 `main / root` 部署。
-5. 依照 [`roadmap.md`](roadmap.md) 建立專案內 `.codex/skills`。
-6. 把資料從 `app.js` 拆到 `data/*.json`。
-7. 補大黑塔不同技能等級、光錐疊影、星魂與隊友 Buff。
-8. 加入可儲存/分享的 URL query 或 localStorage。
-9. 補簡單測試案例，用固定輸入比對預期輸出。
+5. 補大黑塔不同技能等級、光錐疊影、星魂與隊友 Buff。
+6. 加入可儲存/分享的 URL query 或 localStorage。
+7. 補簡單測試案例，用固定輸入比對預期輸出。
 
 ## GitHub Pages
 
