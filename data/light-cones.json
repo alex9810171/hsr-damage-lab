@@ -1,6 +1,30 @@
 {
-  "signature": { "label": "向著不可追問處", "baseAtk": 635 },
-  "genius": { "label": "拂曉之前", "baseAtk": 582 },
-  "cosmos": { "label": "銀河鐵道之夜", "baseAtk": 582 },
-  "none": { "label": "不計光錐", "baseAtk": 0 }
+  "signature": {
+    "label": "向著不可追問處",
+    "baseAtk": 635,
+    "critRate": 12,
+    "afterUltimateBuff": {
+      "skillDmg": 60,
+      "ultDmg": 60,
+      "duration": 3,
+      "condition": "afterUltimate"
+    }
+  },
+  "genius": {
+    "label": "拂曉之前",
+    "baseAtk": 582,
+    "critDamage": 36,
+    "skillDmg": 18,
+    "ultDmg": 18,
+    "followUpDmg": 48
+  },
+  "cosmos": {
+    "label": "銀河鐵道之夜",
+    "baseAtk": 582,
+    "todo": "V1 only uses baseAtk. Add conditional ATK/DMG effects after verifying game data."
+  },
+  "none": {
+    "label": "不計光錐",
+    "baseAtk": 0
+  }
 }

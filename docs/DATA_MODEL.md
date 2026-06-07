@@ -205,6 +205,23 @@
           "stats": {
             "critRate": 12
           }
+        },
+        {
+          "id": "light-cone-after-ultimate-dmg",
+          "stats": {
+            "skillDmg": 60,
+            "ultDmg": 60
+          },
+          "duration": {
+            "type": "turn",
+            "value": 3
+          },
+          "conditions": [
+            {
+              "key": "afterUltimate",
+              "equals": true
+            }
+          ]
         }
       ]
     }
@@ -213,7 +230,26 @@
 }
 ```
 
+V1 目前實際資料可先使用扁平格式，例如：
+
+```json
+{
+  "signature": {
+    "label": "向著不可追問處",
+    "baseAtk": 635,
+    "critRate": 12,
+    "afterUltimateBuff": {
+      "skillDmg": 60,
+      "ultDmg": 60,
+      "duration": 3,
+      "condition": "afterUltimate"
+    }
+  }
+}
+```
+
 光錐可先資料化基礎攻擊與固定 Buff；複雜條件可交給 resolver。
+如果光錐效果尚未確認，應以 `todo` 記錄，不要猜公式。
 
 ## Enemy State 建議格式
 

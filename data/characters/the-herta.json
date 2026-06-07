@@ -17,45 +17,45 @@
   "skills": [
     {
       "id": "basic",
-      "name": "普攻：開竅了嗎",
+      "name": "普攻",
       "type": "basic",
       "displayType": "普攻",
-      "hits": [{ "label": "指定單體", "multiplier": 140, "targets": 1 }]
+      "hits": [{ "label": "指定單體", "multiplier": 100, "targets": 1 }]
     },
     {
       "id": "skill",
-      "name": "戰技：格局打開",
+      "name": "戰技",
       "type": "skill",
       "displayType": "戰技",
       "hits": [
-        { "label": "主目標", "multiplier": 88, "targets": 1 },
-        { "label": "主目標及相鄰目標，重複 2 次", "multiplier": 88, "targets": 3, "repeats": 2 }
+        { "label": "指定單體", "multiplier": 70, "targets": 1 },
+        { "label": "命中目標及相鄰目標，重複 2 次", "multiplier": 70, "targets": 3, "repeats": 2 }
       ]
     },
     {
       "id": "enhanced",
-      "name": "強化戰技：我有一個大膽的想法",
+      "name": "強化戰技",
       "type": "skill",
       "displayType": "戰技",
       "enhanced": true,
       "hits": [
-        { "label": "主目標", "multiplier": 100, "targets": 1, "interpretation": "main" },
+        { "label": "指定單體", "multiplier": 80, "targets": 1, "interpretation": "main" },
         {
-          "label": "主目標及相鄰目標，重複 2 次",
-          "multiplier": 100,
+          "label": "命中目標及相鄰目標，重複 2 次",
+          "multiplier": 80,
           "targets": 3,
           "repeats": 2,
           "interpretation": "adjacent"
         },
-        { "label": "敵方全體收尾", "multiplier": 50, "targets": "all" }
+        { "label": "敵方全體收尾", "multiplier": 40, "targets": "all" }
       ]
     },
     {
       "id": "ultimate",
-      "name": "終結技：早說了是魔法吧",
+      "name": "終結技",
       "type": "ultimate",
       "displayType": "終結技",
-      "hits": [{ "label": "敵方全體", "multiplier": 250, "targets": "all", "riddle": true }]
+      "hits": [{ "label": "敵方全體", "multiplier": 200, "targets": "all", "riddle": true }]
     }
   ]
 }

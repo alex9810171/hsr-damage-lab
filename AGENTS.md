@@ -23,7 +23,9 @@ HSR Damage Lab 是一個可直接部署到 GitHub Pages 的崩壞：星穹鐵道
 - 不要主動新增依賴或工具鏈。
 - 不要把角色資料硬寫進 UI。
 - 不要把傷害公式直接寫在 UI 裡。
-- 如果需要處理角色特殊機制，應集中到 `skill-engine.js`、角色專用 resolver，或其他明確的 engine/resolver 模組；不要散落在 `ui.js`、`calculator.js`、`damage-engine.js` 各處。
+- 如果需要處理角色特殊機制，應集中到 `skill-engine.js`、角色專用 resolver，
+  或其他明確的 engine/resolver 模組。
+  不要散落在 `ui.js`、`calculator.js`、`damage-engine.js` 各處。
 - 如果現有檔案尚未拆到上述目標狀態，先保持功能可運作，再以小步驟拆分。
 
 ## 檔案職責說明

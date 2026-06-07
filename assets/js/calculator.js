@@ -84,6 +84,7 @@ export function readState(data, inputs, overrides = {}) {
   const afterUltimate = overrides.afterUltimate ?? inputs.afterUltimate;
   const twoErudition = overrides.twoErudition ?? inputs.twoErudition;
   const teamAutoBuffs = team ? teamBuffs(data, team) : emptyBuffs();
+  const lightConeDmg = lightConeDmgBonus(lightCone, skill, afterUltimate);
 
   const atkParts = {
     main: sumPart(mainParts, "atkPercent"),
@@ -98,6 +99,7 @@ export function readState(data, inputs, overrides = {}) {
   const critRateParts = {
     base: baseStats.critRate,
     main: sumPart(mainParts, "critRate"),
+    lightCone: lightCone.critRate ?? 0,
     team: Number(overrides.teamCrBuff ?? inputs.teamCrBuff) + teamAutoBuffs.critRate,
     relic: relicCritRate(cavernSetKey, planarSetKey, combinedSet, twoErudition),
     rolls: Number(overrides.crRolls ?? inputs.crRolls) * rollValues.crRolls,
@@ -107,6 +109,7 @@ export function readState(data, inputs, overrides = {}) {
   const critDamageParts = {
     base: baseStats.critDamage,
     main: sumPart(mainParts, "critDamage"),
+    lightCone: lightCone.critDamage ?? 0,
     team: Number(overrides.teamCdBuff ?? inputs.teamCdBuff) + teamAutoBuffs.critDamage,
     relic: 0,
     rolls: Number(overrides.cdRolls ?? inputs.cdRolls) * rollValues.cdRolls,
@@ -120,6 +123,7 @@ export function readState(data, inputs, overrides = {}) {
     main: sumPart(mainParts, "dmgBonus"),
     team: Number(overrides.teamDmgBuff ?? inputs.teamDmgBuff) + teamAutoBuffs.dmgBonus,
     trace: character.traceStats.iceDmg,
+    lightCone: lightConeDmg,
     relicBase: combinedSet.dmgBonus ?? 0,
     relicSkill: skill.type === "skill" ? combinedSet.skillDmg ?? 0 : 0,
     relicUltimate: skill.type === "ultimate" ? combinedSet.ultDmg ?? 0 : 0,
@@ -202,17 +206,23 @@ function multiplierSet(state) {
 function hitMultiplier(hit, state) {
   let mult = hit.multiplier;
   if (hit.interpretation) {
-    const perStack = state.twoErudition ? 20 : 10;
-    const adjacentPerStack = state.twoErudition ? 10 : 5;
+    const perStack = state.twoErudition ? 16 : 8;
+    const adjacentPerStack = state.twoErudition ? 8 : 4;
     mult += state.interpretationStacks * (hit.interpretation === "main" ? perStack : adjacentPerStack);
   }
   if (hit.riddle) mult += state.riddleStacks;
-  if (state.skill.id === "ultimate") {
-    if (state.enemyCount >= 3) mult += 140;
-    if (state.enemyCount === 2) mult += 250;
-    if (state.enemyCount === 1) mult += 400;
-  }
   return mult;
+}
+
+function lightConeDmgBonus(lightCone, skill, afterUltimate) {
+  let bonus = 0;
+  if (lightCone.afterUltimateBuff && afterUltimate) {
+    if (skill.type === "skill") bonus += lightCone.afterUltimateBuff.skillDmg ?? 0;
+    if (skill.type === "ultimate") bonus += lightCone.afterUltimateBuff.ultDmg ?? 0;
+  }
+  if (skill.type === "skill") bonus += lightCone.skillDmg ?? 0;
+  if (skill.type === "ultimate") bonus += lightCone.ultDmg ?? 0;
+  return bonus;
 }
 
 function teamBuffs(data, team) {
