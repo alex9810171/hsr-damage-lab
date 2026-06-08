@@ -37,7 +37,7 @@
               <span>角色等級</span>
               <input id="characterLevel" type="number" min="1" max="80" value="80" />
             </label>
-            <label>
+            <label class="is-hidden">
               <span>隊伍預設</span>
               <select id="teamPreset"></select>
             </label>
@@ -112,15 +112,15 @@
           <div class="substat-grid">
             <label>
               <span>攻擊% 詞條數</span>
-              <input id="atkRolls" type="number" min="0" value="5" />
+              <input id="atkRolls" type="number" min="0" value="3" />
             </label>
             <label>
               <span>暴率 詞條數</span>
-              <input id="crRolls" type="number" min="0" value="15" />
+              <input id="crRolls" type="number" min="0" value="10" />
             </label>
             <label>
               <span>暴傷 詞條數</span>
-              <input id="cdRolls" type="number" min="0" value="10" />
+              <input id="cdRolls" type="number" min="0" value="17" />
             </label>
             <label>
               <span>固定攻擊 詞條數</span>
@@ -158,20 +158,38 @@
               </label>
             </div>
 
+            <div class="eidolon-panel">
+              <div>
+                <h2>大黑塔星魂</h2>
+                <p id="hertaEidolonSummary">0 魂</p>
+              </div>
+              <input id="hertaEidolon" type="hidden" value="0" />
+              <div class="segmented-control" id="hertaEidolonButtons" role="radiogroup" aria-label="大黑塔星魂">
+                <button type="button" class="active" data-eidolon="0" aria-pressed="true">0</button>
+                <button type="button" data-eidolon="1" aria-pressed="false">1</button>
+                <button type="button" data-eidolon="2" aria-pressed="false">2</button>
+                <button type="button" data-eidolon="3" aria-pressed="false">3</button>
+                <button type="button" data-eidolon="4" aria-pressed="false">4</button>
+                <button type="button" data-eidolon="5" aria-pressed="false">5</button>
+                <button type="button" data-eidolon="6" aria-pressed="false">6</button>
+              </div>
+              <div class="effect-list" id="hertaEidolonEffects"></div>
+            </div>
+
             <div class="switch-grid">
-              <label class="switch">
+              <label class="switch is-hidden">
                 <input id="afterUltimate" type="checkbox" checked />
                 <span>終結技後攻擊力提高</span>
               </label>
-              <label class="switch">
+              <label class="switch is-hidden">
                 <input id="twoErudition" type="checkbox" checked />
                 <span>隊伍有 2 名以上智識</span>
               </label>
-              <label class="switch">
+              <label class="switch is-hidden">
                 <input id="fullInterpretationTrace" type="checkbox" checked />
                 <span>42 層解讀行跡增傷</span>
               </label>
-              <label class="switch">
+              <label class="switch is-hidden">
                 <input id="hertaE1" type="checkbox" />
                 <span>大黑塔一魂解讀倍率</span>
               </label>
@@ -191,24 +209,15 @@
                 <strong id="critDamageResult">0</strong>
               </article>
               <article class="result-card">
-                <span>技能總倍率</span>
-                <strong id="damageFactorTotal">0</strong>
-              </article>
-              <article class="result-card">
-                <span>不含攻擊力期望倍率</span>
-                <strong id="fullExpectedMultiplier">0</strong>
-              </article>
-            </div>
-
-            <div class="aux-result-grid">
-              <article class="aux-result-card">
                 <span>非暴擊傷害</span>
                 <strong id="normalDamageResult">0</strong>
               </article>
-              <article class="aux-result-card">
-                <span>最終攻擊力</span>
-                <strong id="finalAtk">0</strong>
-              </article>
+            </div>
+
+            <div class="aux-result-grid is-hidden">
+              <article class="aux-result-card"><strong id="damageFactorTotal">0</strong></article>
+              <article class="aux-result-card"><strong id="fullExpectedMultiplier">0</strong></article>
+              <article class="aux-result-card"><strong id="finalAtk">0</strong></article>
             </div>
 
             <div class="analysis-band compact-insight">
@@ -232,7 +241,7 @@
               <div id="factorSummary" class="factor-list"></div>
             </div>
 
-            <div class="debug-panel">
+            <div class="debug-panel is-hidden">
               <div class="panel-title compact">
                 <h2>公式 Debug</h2>
                 <button class="ghost-button" id="copyDebugButton" type="button">複製公式</button>
@@ -242,6 +251,10 @@
           </div>
 
           <div class="view" id="teamView">
+            <div class="team-summary-card">
+              <strong id="teamSummary">目前隊伍：大黑塔 / 那刻夏 / 緹寶 / 風堇</strong>
+              <div id="teamEffectSummary" class="effect-list"></div>
+            </div>
             <div class="team-grid">
               <label>
                 <span>隊友 1</span>
@@ -263,13 +276,16 @@
                 <input id="teammate1Eidolon" type="number" min="0" max="6" value="0" />
               </label>
               <label>
-                <span>隊友 1 裝備效果</span>
-                <select id="teammate1Setup">
-                  <option value="none">未套用</option>
-                  <option value="signature">專武效果</option>
-                  <option value="relic">輔助遺器效果</option>
-                  <option value="signatureRelic">專武 + 輔助遺器</option>
-                </select>
+                <span>隊友 1 光錐</span>
+                <select id="teammate1LightCone"></select>
+              </label>
+              <label>
+                <span>隊友 1 Cavern</span>
+                <select id="teammate1Cavern"></select>
+              </label>
+              <label>
+                <span>隊友 1 Planar</span>
+                <select id="teammate1Planar"></select>
               </label>
               <label>
                 <span>隊友 2</span>
@@ -291,13 +307,16 @@
                 <input id="teammate2Eidolon" type="number" min="0" max="6" value="0" />
               </label>
               <label>
-                <span>隊友 2 裝備效果</span>
-                <select id="teammate2Setup">
-                  <option value="none">未套用</option>
-                  <option value="signature">專武效果</option>
-                  <option value="relic">輔助遺器效果</option>
-                  <option value="signatureRelic">專武 + 輔助遺器</option>
-                </select>
+                <span>隊友 2 光錐</span>
+                <select id="teammate2LightCone"></select>
+              </label>
+              <label>
+                <span>隊友 2 Cavern</span>
+                <select id="teammate2Cavern"></select>
+              </label>
+              <label>
+                <span>隊友 2 Planar</span>
+                <select id="teammate2Planar"></select>
               </label>
               <label>
                 <span>隊友 3</span>
@@ -319,13 +338,16 @@
                 <input id="teammate3Eidolon" type="number" min="0" max="6" value="0" />
               </label>
               <label>
-                <span>隊友 3 裝備效果</span>
-                <select id="teammate3Setup">
-                  <option value="none">未套用</option>
-                  <option value="signature">專武效果</option>
-                  <option value="relic">輔助遺器效果</option>
-                  <option value="signatureRelic">專武 + 輔助遺器</option>
-                </select>
+                <span>隊友 3 光錐</span>
+                <select id="teammate3LightCone"></select>
+              </label>
+              <label>
+                <span>隊友 3 Cavern</span>
+                <select id="teammate3Cavern"></select>
+              </label>
+              <label>
+                <span>隊友 3 Planar</span>
+                <select id="teammate3Planar"></select>
               </label>
               <label>
                 <span>攻擊% Buff 校正</span>

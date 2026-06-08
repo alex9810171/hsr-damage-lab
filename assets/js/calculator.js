@@ -4,12 +4,20 @@ export const fmt = (value) => Math.round(value).toLocaleString("zh-TW");
 export const pct = (value) => `${Number(value).toFixed(2)}%`;
 export const dec = (value) => Number(value).toFixed(4);
 
+function damageBreakdown(base, extra) {
+  return {
+    base,
+    extra,
+    total: base + extra,
+  };
+}
+
 export function calculateDamage(data, inputs, overrides = {}) {
   const state = readState(data, inputs, overrides);
   const multipliers = multiplierSet(state);
   const critMult = 1 + percent(state.critDamage);
   const expectedCritMult = 1 + percent(state.critRate) * percent(state.critDamage);
-  const traceDmg = state.skill.enhanced && state.fullInterpretationTrace && state.interpretationStacks >= 42 ? 50 : 0;
+  const traceDmg = state.skill.enhanced && state.effectiveInterpretationStacks >= 42 ? 50 : 0;
   const dmgBoost = 1 + percent(state.dmgBonus + traceDmg);
   const common =
     dmgBoost *
@@ -40,13 +48,31 @@ export function calculateDamage(data, inputs, overrides = {}) {
   });
 
   const sum = (key) => hits.reduce((total, hit) => total + hit[key], 0);
+  const hertaNormal = sum("normal");
+  const hertaCrit = sum("crit");
+  const hertaExpected = sum("expected");
+  const trueDamage = state.teamAutoBuffs.trueDamageRate
+    ? {
+        normal: hertaNormal * percent(state.teamAutoBuffs.trueDamageRate),
+        crit: hertaCrit * percent(state.teamAutoBuffs.trueDamageRate),
+        expected: hertaExpected * percent(state.teamAutoBuffs.trueDamageRate),
+        rate: state.teamAutoBuffs.trueDamageRate,
+      }
+    : { normal: 0, crit: 0, expected: 0, rate: 0 };
   return {
     state,
     hits,
     targetDistribution: buildTargetDistribution(hits),
-    normal: sum("normal"),
-    crit: sum("crit"),
-    expected: sum("expected"),
+    hertaNormal,
+    hertaCrit,
+    hertaExpected,
+    normal: hertaNormal + trueDamage.normal,
+    crit: hertaCrit + trueDamage.crit,
+    expected: hertaExpected + trueDamage.expected,
+    trueDamage,
+    normalBreakdown: damageBreakdown(hertaNormal, trueDamage.normal),
+    critBreakdown: damageBreakdown(hertaCrit, trueDamage.crit),
+    expectedBreakdown: damageBreakdown(hertaExpected, trueDamage.expected),
     multipliers,
     factorSummary: buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult, traceDmg),
     critMult,
@@ -70,6 +96,8 @@ export function readState(data, inputs, overrides = {}) {
   const teamKey = overrides.teamPreset ?? inputs.teamPreset;
   const presetTeam = teams[teamKey];
   const activeTeamMembers = activeTeamFromInputs(inputs, overrides, presetTeam);
+  const fullTeamMembers = [{ slot: 1, id: "theHerta", name: "大黑塔", path: "erudition", element: "ice" }, ...activeTeamMembers];
+  const eruditionCount = fullTeamMembers.filter((member) => member.path === "erudition").length;
   const skill = character.skills.find((item) => item.id === (overrides.skillId ?? inputs.skillSelect));
   const selectedMains = {
     body: mainStatValues.bodyMainStat[overrides.bodyMainStat ?? inputs.bodyMainStat],
@@ -85,9 +113,10 @@ export function readState(data, inputs, overrides = {}) {
   const atkRolls = Number(overrides.atkRolls ?? inputs.atkRolls);
   const atkFromRolls = atkRolls * rollValues.atkRolls;
   const ultimateAtkBuff = Number(overrides.ultimateAtkBuff ?? character.ultimateAtkBuff);
-  const afterUltimate = overrides.afterUltimate ?? inputs.afterUltimate;
-  const twoErudition = overrides.twoErudition ?? inputs.twoErudition;
-  const teamAutoBuffs = teamBuffs(data, activeTeamMembers);
+  const afterUltimate = true;
+  const twoErudition = eruditionCount >= 2;
+  const hertaEidolon = clamp(Number(overrides.hertaEidolon ?? inputs.hertaEidolon ?? 0), 0, 6);
+  const teamAutoBuffs = teamBuffs(data, activeTeamMembers, eruditionCount);
   const lightConeDmg = lightConeDmgBonus(lightCone, skill, afterUltimate);
 
   const atkParts = {
@@ -96,7 +125,7 @@ export function readState(data, inputs, overrides = {}) {
     team: Number(overrides.teamAtkBuff ?? inputs.teamAtkBuff) + teamAutoBuffs.atkPercent,
     relic: combinedSet.atkPercent ?? 0,
     rolls: atkFromRolls,
-    ultimate: afterUltimate ? ultimateAtkBuff : 0,
+    ultimate: ultimateAtkBuff,
   };
   const atkPercent = sumObject(atkParts);
 
@@ -151,7 +180,9 @@ export function readState(data, inputs, overrides = {}) {
     team: presetTeam,
     teamKey,
     activeTeamMembers,
-    teamLabel: teamKey === "custom" ? "自訂隊伍" : (presetTeam?.label ?? "自訂隊伍"),
+    fullTeamMembers,
+    eruditionCount,
+    teamLabel: fullTeamMembers.map((member) => member.name).join(" / "),
     teamAutoBuffs,
     selectedMains,
     baseAtk,
@@ -170,21 +201,25 @@ export function readState(data, inputs, overrides = {}) {
     critDamage,
     dmgParts,
     dmgBonus,
-    resPen: Number(overrides.resPen ?? 0),
+    resPen: Number(overrides.resPen ?? 0) + teamAutoBuffs.resPen + (hertaEidolon >= 6 ? 20 : 0),
     characterLevel: Number(overrides.characterLevel ?? inputs.characterLevel),
     enemyLevel: Number(overrides.enemyLevel ?? inputs.enemyLevel),
     defReduction: Number(overrides.defReduction ?? inputs.defReduction),
     defIgnore: Number(overrides.defIgnore ?? inputs.defIgnore),
     enemyRes: Number(overrides.enemyRes ?? inputs.enemyRes),
-    vulnerability: Number(overrides.vulnerability ?? inputs.vulnerability),
+    vulnerability: Number(overrides.vulnerability ?? inputs.vulnerability) + teamAutoBuffs.vulnerability,
     weaken: Number(overrides.weaken ?? inputs.weaken),
     mitigation: Number(overrides.mitigation ?? inputs.mitigation),
     enemyCount: Number(overrides.enemyCount ?? inputs.enemyCount),
     interpretationStacks: Number(overrides.interpretationStacks ?? inputs.interpretationStacks),
+    effectiveInterpretationStacks: Number(overrides.interpretationStacks ?? inputs.interpretationStacks) * (hertaEidolon >= 1 ? 1.5 : 1),
+    interpretationEidolonMultiplier: hertaEidolon >= 1 ? 1.5 : 1,
     riddleStacks: Number(overrides.riddleStacks ?? inputs.riddleStacks),
     twoErudition,
-    fullInterpretationTrace: overrides.fullInterpretationTrace ?? inputs.fullInterpretationTrace,
-    hertaE1: overrides.hertaE1 ?? inputs.hertaE1,
+    fullInterpretationTrace: true,
+    hertaEidolon,
+    hertaEidolonEffects: hertaEidolonEffects(hertaEidolon),
+    hertaE1: hertaEidolon >= 1,
     targetBroken: overrides.targetBroken ?? inputs.targetBroken,
     character,
   };
@@ -275,16 +310,35 @@ function hitMultiplier(hit, state, position = 0) {
   if (hit.mechanicRow === "interpretation") {
     const perStack = state.twoErudition ? 16 : 8;
     const adjacentPerStack = state.twoErudition ? 8 : 4;
-    const eidolonMultiplier = state.hertaE1 ? 1.5 : 1;
-    mult += state.interpretationStacks * (position === 0 ? perStack : adjacentPerStack) * eidolonMultiplier;
+    mult += state.effectiveInterpretationStacks * (position === 0 ? perStack : adjacentPerStack);
   } else if (hit.interpretation) {
     const perStack = state.twoErudition ? 16 : 8;
     const adjacentPerStack = state.twoErudition ? 8 : 4;
-    const eidolonMultiplier = state.hertaE1 ? 1.5 : 1;
-    mult += state.interpretationStacks * (hit.interpretation === "main" ? perStack : adjacentPerStack) * eidolonMultiplier;
+    mult += state.effectiveInterpretationStacks * (hit.interpretation === "main" ? perStack : adjacentPerStack);
   }
   if (hit.riddle) mult += state.riddleStacks;
+  if (state.hertaEidolon >= 6 && state.skill.id === "ultimate" && hit.riddle) {
+    mult += e6UltimateBonus(state.enemyCount);
+  }
   return mult;
+}
+
+function e6UltimateBonus(enemyCount) {
+  if (enemyCount <= 1) return 400;
+  if (enemyCount === 2) return 250;
+  return 140;
+}
+
+function hertaEidolonEffects(eidolon) {
+  const effects = [`大黑塔星魂：${eidolon} 魂`];
+  if (eidolon >= 1) effects.push("1 魂：有效解讀層數 = 實際解讀層數 x 1.5，會影響 42 層行跡增傷判斷");
+  if (eidolon >= 2) effects.push("2 魂：靈感 / 行動提前，V1 單次傷害不直接計入");
+  if (eidolon >= 3) effects.push("3 魂：技能等級 +2、天賦等級 +2；V1 缺少可靠 Lv12/Lv15 倍率表，暫只展示 TODO");
+  if (eidolon >= 4) effects.push("4 魂：智識角色速度 +12%，V1 單次傷害不計入");
+  if (eidolon >= 5) effects.push("5 魂：終結技等級 +2、普攻等級 +1；V1 缺少可靠 Lv12/Lv15 倍率表，暫只展示 TODO");
+  if (eidolon >= 6) effects.push("6 魂：冰屬性抗性穿透 +20%；終結技依敵人數提高倍率");
+  if (eidolon === 0) effects.push("0 魂：未啟用星魂傷害效果");
+  return effects;
 }
 
 function lightConeDmgBonus(lightCone, skill, afterUltimate) {
@@ -303,23 +357,18 @@ function activeTeamFromInputs(inputs, overrides, presetTeam) {
   return [1, 2, 3].map((slot) => {
     const fallback = fallbackMembers[slot - 1] ?? {};
     const id = overrides[`teammate${slot}`] ?? inputs[`teammate${slot}`] ?? fallback.id ?? "none";
-    const setup = overrides[`teammate${slot}Setup`] ?? inputs[`teammate${slot}Setup`] ?? memberSetup(fallback);
     return {
       slot: slot + 1,
       id,
       name: teammateName(id, fallback.name),
+      path: teammatePath(id),
+      element: teammateElement(id),
       eidolon: Number(overrides[`teammate${slot}Eidolon`] ?? inputs[`teammate${slot}Eidolon`] ?? fallback.eidolon ?? 0),
-      setup,
-      planarSet: teammatePlanarSet(id, setup, fallback.planarSet),
+      lightConeId: overrides[`teammate${slot}LightCone`] ?? inputs[`teammate${slot}LightCone`] ?? fallback.lightConeId ?? "none",
+      cavernSet: overrides[`teammate${slot}Cavern`] ?? inputs[`teammate${slot}Cavern`] ?? fallback.cavernSet ?? "none",
+      planarSet: overrides[`teammate${slot}Planar`] ?? inputs[`teammate${slot}Planar`] ?? fallback.planarSet ?? "none",
     };
   });
-}
-
-function memberSetup(member = {}) {
-  if (member.signatureSuperimposition > 0 && member.planarSet !== "none") return "signatureRelic";
-  if (member.signatureSuperimposition > 0) return "signature";
-  if (member.planarSet && member.planarSet !== "none") return "relic";
-  return "none";
 }
 
 function teammateName(id, fallbackName) {
@@ -338,20 +387,74 @@ function teammateName(id, fallbackName) {
   return names[id] ?? fallbackName ?? id;
 }
 
-function teammatePlanarSet(id, setup, fallbackPlanarSet) {
-  if (setup !== "relic" && setup !== "signatureRelic") return "none";
-  if (fallbackPlanarSet && fallbackPlanarSet !== "none") return fallbackPlanarSet;
-  if (id === "anaxa" || id === "tribbie") return "lushaka";
-  return "none";
+function teammatePath(id) {
+  return {
+    theHerta: "erudition",
+    anaxa: "erudition",
+    tribbie: "harmony",
+    hyacine: "remembrance",
+    jade: "erudition",
+    smallHerta: "erudition",
+    robin: "harmony",
+    ruanMei: "harmony",
+    pela: "nihility",
+  }[id] ?? "unknown";
 }
 
-function teamBuffs(data, members) {
+function teammateElement(id) {
+  return {
+    theHerta: "ice",
+    anaxa: "wind",
+    tribbie: "quantum",
+    hyacine: "wind",
+  }[id] ?? "unknown";
+}
+
+function teamBuffs(data, members, eruditionCount) {
   const buffs = emptyBuffs();
+  buffs.sources.push(`智識角色數量：${eruditionCount}`);
+  buffs.sources.push(`2 智識效果：${eruditionCount >= 2 ? "已啟用" : "未啟用"}`);
   members.forEach((member) => {
     const planar = data.relicSets[member.planarSet];
     if (member.slot !== 1 && planar?.firstSlotAtkIfNotFirst) {
       buffs.atkPercent += planar.firstSlotAtkIfNotFirst;
-      buffs.sources.push(`${member.name} ${planar.label}: 1號位攻擊 +${planar.firstSlotAtkIfNotFirst}%`);
+      buffs.sources.push(`隊友位面：${member.name} ${planar.label}，1號位攻擊 +${planar.firstSlotAtkIfNotFirst}%（部分支援）`);
+    }
+    const cavern = data.relicSets[member.cavernSet];
+    if (cavern && member.cavernSet !== "none") {
+      buffs.sources.push(`${member.name} Cavern：${cavern.label}（${cavern.supportStatus ?? "待核對"}，V1 不臆測未確認單次傷害加成）`);
+    }
+    if (member.id === "anaxa") {
+      buffs.sources.push("那刻夏：提供第 2 名智識，觸發大黑塔 2 智識相關效果");
+      if (eruditionCount >= 2) {
+        buffs.dmgBonus += 50;
+        buffs.sources.push("那刻夏「必要的留白」：2 智識以上，全隊造成傷害 +50%");
+      } else {
+        buffs.sources.push("那刻夏「必要的留白」：1 智識時只提高那刻夏自身暴擊傷害，V1 不套用到大黑塔");
+      }
+      buffs.sources.push("那刻夏終結技：可造成多弱點狀態，V1 先作為戰鬥狀態 TODO，不直接加成大黑塔傷害");
+      buffs.sources.push("那刻夏光錐：不息的演算為那刻夏自身效果，V1 不直接加成大黑塔");
+      if (member.eidolon < 1) buffs.sources.push("那刻夏 0 魂：不套用 E1 防禦降低");
+    }
+    if (member.id === "tribbie") {
+      buffs.resPen += 24;
+      buffs.vulnerability += 30;
+      buffs.sources.push("緹寶：戰技全屬性抗性穿透 +24%");
+      buffs.sources.push("緹寶：終結技結界敵方受到傷害 +30%（V1 預設已啟用）");
+      if (member.eidolon >= 1) {
+        buffs.trueDamageRate = 24;
+        buffs.sources.push("緹寶 1 魂：額外真實傷害 = 大黑塔本體總傷害 x 24%，獨立加入合計");
+      }
+      if (member.lightConeId === "danceDanceDance") {
+        buffs.sources.push("舞！舞！舞！：行動提前，V1 單次傷害不計入");
+      }
+    }
+    if (member.id === "hyacine") {
+      buffs.sources.push("風堇本體：V1 暫無直接套用的大黑塔本體傷害加成，TODO");
+      if (member.lightConeId === "rainbow") {
+        buffs.vulnerability += 18;
+        buffs.sources.push("風堇光錐：愿虹光永駐天空，敵方受到傷害 +18%（V1 暫以憶靈技效果已觸發計算）");
+      }
     }
   });
   return buffs;
@@ -360,12 +463,18 @@ function teamBuffs(data, members) {
 function buildTargetDistribution(hits) {
   const labels = new Map();
   const totals = new Map();
+  const damages = new Map();
   const parts = new Map();
   hits.forEach((hit) => {
     if (hit.position === undefined) return;
     labels.set(hit.position, targetLabel(hit.position));
     const value = hit.ability * hit.targets * hit.repeats;
     totals.set(hit.position, (totals.get(hit.position) ?? 0) + value);
+    const currentDamage = damages.get(hit.position) ?? { normal: 0, crit: 0, expected: 0 };
+    currentDamage.normal += hit.normal;
+    currentDamage.crit += hit.crit;
+    currentDamage.expected += hit.expected;
+    damages.set(hit.position, currentDamage);
     const currentParts = parts.get(hit.position) ?? [];
     currentParts.push({
       label: hit.rowLabel,
@@ -375,7 +484,15 @@ function buildTargetDistribution(hits) {
   });
   return [...totals.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([position, multiplier]) => ({ position, label: labels.get(position), multiplier, parts: parts.get(position) ?? [] }));
+    .map(([position, multiplier]) => ({
+      position,
+      label: labels.get(position),
+      multiplier,
+      normal: damages.get(position)?.normal ?? 0,
+      crit: damages.get(position)?.crit ?? 0,
+      expected: damages.get(position)?.expected ?? 0,
+      parts: parts.get(position) ?? [],
+    }));
 }
 
 function emptyBuffs() {
@@ -385,7 +502,9 @@ function emptyBuffs() {
     critDamage: 0,
     dmgBonus: 0,
     vulnerability: 0,
+    resPen: 0,
     defReduction: 0,
+    trueDamageRate: 0,
     sources: [],
   };
 }
@@ -431,7 +550,10 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     .map((hit) => part(`解讀層數：${targetLabel(hit.position)}`, percent(hit.ability) * hit.repeats, "x", `${hit.ability.toFixed(1)}% x ${hit.repeats}`));
   const activeDmgParts = [
     part("主詞條增傷", state.dmgParts.main, "%"),
-    part("隊伍/校正增傷", state.dmgParts.team, "%"),
+    state.teamAutoBuffs.sources.some((source) => source.includes("必要的留白"))
+      ? part("那刻夏「必要的留白」：2 智識以上，全隊造成傷害", 50, "%")
+      : part("那刻夏「必要的留白」", 0, "note", "未達 2 智識或那刻夏不在隊伍"),
+    part("手動隊伍/校正增傷", Number(state.dmgParts.team) - state.teamAutoBuffs.dmgBonus, "%"),
     part("行跡冰屬性傷害", state.dmgParts.trace, "%"),
     part(lightConeDmgLabel(state), state.dmgParts.lightCone, "%"),
     part("套裝基礎增傷", state.dmgParts.relicBase, "%"),
@@ -442,7 +564,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     part("42 層解讀行跡增傷", traceDmg, "%"),
   ].filter(hasValue);
 
-  return [
+  const factors = [
     {
       label: "攻擊區",
       value: state.finalAtk,
@@ -458,7 +580,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
         part("隊伍/校正攻擊%", state.atkParts.team, "%"),
         part("套裝攻擊%", state.atkParts.relic, "%"),
         part("副詞條攻擊%", state.atkParts.rolls, "%"),
-        part("大黑塔終結技後攻擊 Buff", state.atkParts.ultimate, "%"),
+        part("大黑塔終結技後攻擊力 +80%（V1 預設常駐）", state.atkParts.ultimate, "%"),
         part("手部固定攻擊", state.handFlatAtk),
         part("副詞條固定攻擊", state.flatAtkFromRolls),
         part("固定攻擊合計", state.flatAtk),
@@ -623,6 +745,84 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       ],
     },
   ];
+
+  const skillFactor = factors.find((factor) => factor.label === "技能總倍率");
+  if (skillFactor) {
+    skillFactor.formula = "技能總倍率：請見技能拆解";
+    skillFactor.parts = [
+      ...targetParts,
+      part("技能總倍率公式", totalAbility, "x", `${targetFormula} = ${(totalAbility * 100).toFixed(0)}%`),
+      state.hertaEidolon >= 6 && state.skill.id === "ultimate"
+        ? part("大黑塔 6 魂：終結技倍率提高", e6UltimateBonus(state.enemyCount), "%", `敵人數 ${state.enemyCount}`)
+        : part("大黑塔 6 魂：終結技倍率提高", 0, "note", "未啟用或目前技能不是終結技"),
+    ];
+  }
+
+  const critFactor = factors.find((factor) => factor.label === "暴擊期望");
+  if (critFactor) {
+    critFactor.formula = "暴擊期望倍率 = 1 + min(暴擊率, 100%) x 暴擊傷害";
+    critFactor.parts = [
+      part("暴擊率", 0, "section"),
+      part("基礎暴擊率", state.critRateParts.base, "%"),
+      part("主詞條暴擊率", state.critRateParts.main, "%"),
+      part("副詞條暴擊率", state.critRateParts.rolls, "%"),
+      part("光錐暴擊率", state.critRateParts.lightCone, "%"),
+      part("遺器暴擊率", state.critRateParts.relic, "%"),
+      part("隊伍暴擊率", state.critRateParts.team, "%"),
+      part("其他暴擊率", 0, "%"),
+      part("最終暴擊率", state.critRateRaw, "%"),
+      part("期望計算使用暴擊率", state.critRate, "%", "min(暴擊率, 100%)"),
+      part("暴擊傷害", 0, "section"),
+      part("基礎暴擊傷害", state.critDamageParts.base, "%"),
+      part("主詞條暴擊傷害", state.critDamageParts.main, "%"),
+      part("副詞條暴擊傷害", state.critDamageParts.rolls, "%"),
+      part("光錐暴擊傷害", state.critDamageParts.lightCone, "%"),
+      part("遺器暴擊傷害", state.critDamageParts.relic, "%"),
+      part("隊伍暴擊傷害", state.critDamageParts.team, "%"),
+      part("其他暴擊傷害", 0, "%"),
+      part("最終暴擊傷害", state.critDamage, "%"),
+      part("暴擊期望倍率", expectedCritMult, "x", "1 + min(暴擊率, 100%) x 暴擊傷害"),
+    ];
+  }
+
+  const resFactor = factors.find((factor) => factor.label === "抗性區");
+  if (resFactor) {
+    resFactor.parts = [
+      part("敵人冰抗性", state.enemyRes, "%"),
+      part("緹寶：全屬性抗性穿透", state.teamAutoBuffs.resPen >= 24 ? 24 : 0, "%"),
+      part("大黑塔 6 魂：冰屬性抗性穿透", state.hertaEidolon >= 6 ? 20 : 0, "%"),
+      part("抗性穿透合計", state.resPen, "%"),
+    ];
+  }
+
+  const vulnFactor = factors.find((factor) => factor.label === "易傷區");
+  if (vulnFactor) {
+    const manualVulnerability = state.vulnerability - state.teamAutoBuffs.vulnerability;
+    vulnFactor.parts = [
+      part("基礎值", 100, "%"),
+      part("手動敵人易傷", manualVulnerability, "%"),
+      part("緹寶：終結技結界敵方受到傷害", state.teamAutoBuffs.sources.some((source) => source.includes("緹寶：終結技")) ? 30 : 0, "%"),
+      part("風堇光錐：愿虹光永駐天空", state.teamAutoBuffs.sources.some((source) => source.includes("愿虹光")) ? 18 : 0, "%"),
+      part("敵人易傷合計", state.vulnerability, "%"),
+    ];
+  }
+
+  const order = [
+    "技能總倍率",
+    "攻擊區",
+    "增傷區",
+    "暴擊期望",
+    "防禦區",
+    "抗性區",
+    "易傷區",
+    "我方減傷區",
+    "敵方減傷區",
+    "弱點區",
+    "相對基準總倍率",
+    "通用乘區倍率",
+    "不含攻擊力期望倍率",
+  ];
+  return order.map((label) => factors.find((factor) => factor.label === label)).filter(Boolean);
 }
 
 function defenseMultiplierFor(state, defReduction, defIgnore) {

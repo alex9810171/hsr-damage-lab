@@ -203,6 +203,10 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -231,11 +235,57 @@ button:focus-visible {
   display: block;
 }
 
-.switch-grid {
+.switch-grid,
+.eidolon-panel,
+.team-summary-card {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 16px 0;
+}
+
+.switch-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.eidolon-panel,
+.team-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfe;
+}
+
+.eidolon-panel p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.segmented-control button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.segmented-control button.active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.effect-list {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .switch {
@@ -262,7 +312,7 @@ button:focus-visible {
 
 .result-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -288,6 +338,27 @@ button:focus-visible {
   margin-top: 12px;
   font-size: clamp(1.5rem, 3vw, 2.4rem);
   line-height: 1;
+}
+
+.damage-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.damage-line b {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.damage-line.total {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  color: var(--blue);
+  font-size: 1rem;
 }
 
 .result-card.highlight {
@@ -593,6 +664,15 @@ button:focus-visible {
   border-radius: 6px;
   padding: 7px 8px;
   background: #fff;
+}
+
+.factor-parts li.factor-section {
+  background: #eef6ff;
+  font-weight: 750;
+}
+
+.factor-parts li.factor-section strong {
+  display: none;
 }
 
 .factor-parts span,

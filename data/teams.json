@@ -1,23 +1,23 @@
 {
   "theHertaDefault": {
-    "label": "2+1 大黑塔 / 那刻夏 / 緹寶 / 風堇",
-    "notes": "第一版先資料化隊伍配置。露莎卡給一號位攻擊加成已接入；其他隊友技能、星魂、專武效果待逐項核對後接入。",
+    "label": "大黑塔 / 那刻夏 / 緹寶 / 風堇",
+    "notes": "隊伍預設只作初始化資料；計算以實際隊友欄位為準。",
     "members": [
       {
         "slot": 1,
         "id": "theHerta",
         "name": "大黑塔",
-        "eidolon": 2,
+        "eidolon": 0,
         "signatureSuperimposition": 1,
-        "cavernSet": "wind",
-        "planarSet": "vonwacq"
+        "cavernSet": "scholar",
+        "planarSet": "izumo"
       },
       {
         "slot": 2,
         "id": "anaxa",
         "name": "那刻夏",
         "eidolon": 0,
-        "signatureSuperimposition": 0,
+        "lightConeId": "lifeShouldBeCast",
         "cavernSet": "wind",
         "planarSet": "lushaka"
       },
@@ -26,8 +26,8 @@
         "id": "tribbie",
         "name": "緹寶",
         "eidolon": 1,
-        "signatureSuperimposition": 0,
-        "cavernSet": "warriorGoddess",
+        "lightConeId": "danceDanceDance",
+        "cavernSet": "wind",
         "planarSet": "lushaka"
       },
       {
@@ -35,9 +35,9 @@
         "id": "hyacine",
         "name": "風堇",
         "eidolon": 0,
-        "signatureSuperimposition": 1,
-        "cavernSet": "none",
-        "planarSet": "none"
+        "lightConeId": "rainbow",
+        "cavernSet": "warriorGoddess",
+        "planarSet": "lushaka"
       }
     ]
   }

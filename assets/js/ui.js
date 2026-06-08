@@ -1,6 +1,27 @@
 import { calculateDamage, fmt } from "./calculator.js";
 import { renderFormulaDebug } from "./formula-debug.js";
 
+const TEAMMATE_LIGHT_CONES = {
+  none: [
+    ["none", "未套用"],
+  ],
+  anaxa: [
+    ["lifeShouldBeCast", "不息的演算（自身效果，V1 不加成大黑塔）"],
+    ["none", "未套用"],
+  ],
+  tribbie: [
+    ["danceDanceDance", "舞！舞！舞！（行動提前，V1 不計入）"],
+    ["none", "未套用"],
+  ],
+  hyacine: [
+    ["rainbow", "愿虹光永駐天空（敵方受到傷害 +18%）"],
+    ["none", "未套用"],
+  ],
+  default: [
+    ["none", "未套用"],
+  ],
+};
+
 export function createUI(data) {
   const ids = [
     "characterLevel",
@@ -25,16 +46,26 @@ export function createUI(data) {
     "twoErudition",
     "fullInterpretationTrace",
     "hertaE1",
+    "hertaEidolon",
+    "hertaEidolonSummary",
+    "hertaEidolonEffects",
+    "hertaEidolonButtons",
     "targetBroken",
     "teammate1",
     "teammate1Eidolon",
-    "teammate1Setup",
+    "teammate1LightCone",
+    "teammate1Cavern",
+    "teammate1Planar",
     "teammate2",
     "teammate2Eidolon",
-    "teammate2Setup",
+    "teammate2LightCone",
+    "teammate2Cavern",
+    "teammate2Planar",
     "teammate3",
     "teammate3Eidolon",
-    "teammate3Setup",
+    "teammate3LightCone",
+    "teammate3Cavern",
+    "teammate3Planar",
     "teamAtkBuff",
     "teamDmgBuff",
     "teamCrBuff",
@@ -56,6 +87,8 @@ export function createUI(data) {
     "formulaDebug",
     "copyDebugButton",
     "factorSummary",
+    "teamSummary",
+    "teamEffectSummary",
   ];
   const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
@@ -67,8 +100,11 @@ export function createUI(data) {
       console.warn(`Missing UI elements: ${missing.join(", ")}`);
     }
     populateSkills();
+    populateTeammateEquipmentOptions();
     populateTeams();
     bindTeamFieldSync();
+    bindHertaEidolonButtons();
+    bindTeammateCharacterEquipmentSync();
     document.querySelectorAll("input, select").forEach((input) => {
       input.addEventListener("input", calculate);
       input.addEventListener("change", calculate);
@@ -150,16 +186,10 @@ export function createUI(data) {
       const slot = index + 1;
       setValue(`teammate${slot}`, member.id);
       setValue(`teammate${slot}Eidolon`, member.eidolon);
-      setValue(
-        `teammate${slot}Setup`,
-        member.signatureSuperimposition > 0 && member.planarSet !== "none"
-          ? "signatureRelic"
-          : member.signatureSuperimposition > 0
-            ? "signature"
-            : member.planarSet !== "none"
-              ? "relic"
-              : "none",
-      );
+      refreshLightConeOptions(slot, member.id);
+      setValue(`teammate${slot}LightCone`, member.lightConeId ?? "none");
+      setValue(`teammate${slot}Cavern`, member.cavernSet ?? "none");
+      setValue(`teammate${slot}Planar`, member.planarSet ?? "none");
     });
   }
 
@@ -174,9 +204,9 @@ export function createUI(data) {
 
   function loadPreset() {
     const preset = {
-      atkRolls: 5,
-      crRolls: 15,
-      cdRolls: 10,
+      atkRolls: 3,
+      crRolls: 10,
+      cdRolls: 17,
       flatAtkRolls: 0,
       teamAtkBuff: 0,
       teamDmgBuff: 0,
@@ -200,6 +230,8 @@ export function createUI(data) {
     setValue("planarSet", "izumo");
     setValue("skillSelect", "enhanced");
     applyTeamToFields();
+    setValue("hertaEidolon", 0);
+    syncHertaEidolonButtons();
     setChecked("afterUltimate", true);
     setChecked("twoErudition", true);
     setChecked("fullInterpretationTrace", true);
@@ -216,31 +248,23 @@ export function createUI(data) {
 
   function calculate() {
     const result = calculateDamage(data, readInputs());
-    setText("expectedDamage", fmt(result.expected));
-    setText("critDamageResult", fmt(result.crit));
-    setText("normalDamageResult", fmt(result.normal));
+    setDamageCard("expectedDamage", result.expectedBreakdown);
+    setDamageCard("critDamageResult", result.critBreakdown);
+    setDamageCard("normalDamageResult", result.normalBreakdown);
     setText("damageFactorTotal", formatFactorCardValue(findFactor(result, "技能總倍率")));
     setText("fullExpectedMultiplier", formatFactorCardValue(findFactor(result, "不含攻擊力期望倍率")));
     setText("finalAtk", fmt(result.state.finalAtk));
     renderBreakdown(result);
     renderFactorSummary(result);
+    renderTeamSummary(result);
+    renderHertaEidolonSummary(result);
     renderMarginalReference(result);
     setText("formulaDebug", renderFormulaDebug(result));
   }
 
   function renderBreakdown(result) {
-    const baseHits = result.hits.filter((hit) => hit.rowLabel !== "解讀層數倍率");
-    const interpretationHits = result.hits.filter((hit) => hit.rowLabel === "解讀層數倍率");
     document.getElementById("skillBreakdown").innerHTML = `
       ${renderTargetOverview(result.targetDistribution)}
-      ${renderHitGroup("基礎命中列", summarizeHits(baseHits), false)}
-      ${interpretationHits.length ? renderHitGroup("解讀層數倍率", summarizeHits(interpretationHits, true), false) : ""}
-      <details class="breakdown-section">
-        <summary>詳細 hit 計算</summary>
-        <div class="breakdown-list compact-list">
-          ${result.hits.map(renderDetailedHit).join("")}
-        </div>
-      </details>
     `;
   }
 
@@ -264,6 +288,9 @@ export function createUI(data) {
           <span>${item.multiplier.toFixed(0)}%</span>
         </summary>
         <ul>
+          <li><span>非暴擊</span><strong>${fmt(item.normal)}</strong></li>
+          <li><span>暴擊</span><strong>${fmt(item.crit)}</strong></li>
+          <li><span>期望</span><strong>${fmt(item.expected)}</strong></li>
           ${(item.parts ?? [])
             .map((part) => `<li><span>${escapeHtml(part.label)}</span><strong>${part.multiplier.toFixed(0)}%</strong></li>`)
             .join("")}
@@ -399,7 +426,7 @@ export function createUI(data) {
         ${parts
           .map(
             (item) => `
-              <li>
+              <li class="${item.unit === "section" ? "factor-section" : ""}">
                 <span>${escapeHtml(item.label)}</span>
               <strong>${formatPartValue(item)}</strong>
                 ${item.note ? `<em>${escapeHtml(item.note)}</em>` : ""}
@@ -421,6 +448,7 @@ export function createUI(data) {
   function formatPartValue(item) {
     const value = Number(item.value || 0);
     if (item.unit === "note") return "";
+    if (item.unit === "section") return "";
     if (item.unit === "%") return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
     if (item.unit === "x") return `${value.toFixed(4)}x`;
     return value.toFixed(1);
@@ -447,14 +475,122 @@ export function createUI(data) {
     return [
       "teammate1",
       "teammate1Eidolon",
-      "teammate1Setup",
+      "teammate1LightCone",
+      "teammate1Cavern",
+      "teammate1Planar",
       "teammate2",
       "teammate2Eidolon",
-      "teammate2Setup",
+      "teammate2LightCone",
+      "teammate2Cavern",
+      "teammate2Planar",
       "teammate3",
       "teammate3Eidolon",
-      "teammate3Setup",
+      "teammate3LightCone",
+      "teammate3Cavern",
+      "teammate3Planar",
     ];
+  }
+
+  function populateTeammateEquipmentOptions() {
+    [1, 2, 3].forEach((slot) => {
+      refreshLightConeOptions(slot, el[`teammate${slot}`]?.value ?? "none");
+      populateRelicSelect(el[`teammate${slot}Cavern`], "cavern");
+      populateRelicSelect(el[`teammate${slot}Planar`], "planar");
+    });
+  }
+
+  function populateRelicSelect(select, category) {
+    if (!select) return;
+    select.replaceChildren();
+    Object.entries(data.relicSets)
+      .filter(([, set]) => set.category === category || set.category === "any")
+      .forEach(([id, set]) => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = `[${set.supportStatus ?? "待核對"}] ${set.label}${set.notes ? `：${set.notes}` : ""}`;
+        select.append(option);
+      });
+  }
+
+  function refreshLightConeOptions(slot, teammateId) {
+    const select = el[`teammate${slot}LightCone`];
+    if (!select) return;
+    const current = select.value;
+    const options = TEAMMATE_LIGHT_CONES[teammateId] ?? TEAMMATE_LIGHT_CONES.default;
+    select.replaceChildren();
+    options.forEach(([id, label]) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = label;
+      select.append(option);
+    });
+    select.value = options.some(([id]) => id === current) ? current : options[0][0];
+  }
+
+  function bindTeammateCharacterEquipmentSync() {
+    [1, 2, 3].forEach((slot) => {
+      el[`teammate${slot}`]?.addEventListener("change", () => {
+        refreshLightConeOptions(slot, el[`teammate${slot}`].value);
+      });
+    });
+  }
+
+  function bindHertaEidolonButtons() {
+    el.hertaEidolonButtons?.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        setValue("hertaEidolon", button.dataset.eidolon);
+        syncHertaEidolonButtons();
+        calculate();
+      });
+    });
+  }
+
+  function syncHertaEidolonButtons() {
+    const current = String(el.hertaEidolon?.value ?? "0");
+    el.hertaEidolonButtons?.querySelectorAll("button").forEach((button) => {
+      const active = button.dataset.eidolon === current;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  function renderTeamSummary(result) {
+    if (!el.teamSummary) return;
+    setText("teamSummary", `目前隊伍：${result.state.fullTeamMembers.map((member) => member.name).join(" / ")}`);
+    el.teamEffectSummary.innerHTML = result.state.teamAutoBuffs.sources
+      .map((source) => `<div>${escapeHtml(source)}</div>`)
+      .join("");
+  }
+
+  function renderHertaEidolonSummary(result) {
+    const eidolon = result.state.hertaEidolon;
+    setText("hertaEidolonSummary", `${eidolon} 魂`);
+    if (!el.hertaEidolonEffects) return;
+    const interpretationStatus = [
+      `實際解讀層數：${result.state.interpretationStacks}`,
+      `一魂倍率：${result.state.interpretationEidolonMultiplier.toFixed(1)}x`,
+      `有效解讀層數：${result.state.effectiveInterpretationStacks}`,
+      `42 層行跡增傷：${result.traceDmg ? "已觸發" : "未觸發"}`,
+      `智識角色數量：${result.state.eruditionCount}`,
+      `2 智識效果：${result.state.twoErudition ? "已啟用" : "未啟用"}`,
+    ];
+    el.hertaEidolonEffects.innerHTML = [...interpretationStatus, ...result.state.hertaEidolonEffects]
+      .map((effect) => `<div>${escapeHtml(effect)}</div>`)
+      .join("");
+  }
+
+  function setDamageCard(id, breakdown) {
+    const node = el[id];
+    if (!node) return;
+    if (!breakdown?.extra) {
+      node.textContent = fmt(breakdown?.total ?? 0);
+      return;
+    }
+    node.innerHTML = `
+      <span class="damage-line"><b>大黑塔本體</b>${fmt(breakdown.base)}</span>
+      <span class="damage-line"><b>緹寶 1 魂真實傷害</b>${fmt(breakdown.extra)}</span>
+      <span class="damage-line total"><b>合計</b>${fmt(breakdown.total)}</span>
+    `;
   }
 
   function escapeHtml(value) {
