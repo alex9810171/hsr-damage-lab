@@ -211,6 +211,19 @@ function multiplierSet(state) {
   };
 }
 
+function baselineMultiplierSet(state) {
+  const baseDefMult =
+    (state.characterLevel + 20) / ((state.enemyLevel + 20) + state.characterLevel + 20);
+  return {
+    defMult: baseDefMult,
+    resMult: 1 - percent(state.enemyRes),
+    vulnMult: 1,
+    weakenMult: 1,
+    mitigationMult: 1,
+    brokenMult: 0.9,
+  };
+}
+
 function resolveSkillHits(state) {
   return state.skill.hits.flatMap((hit) => {
     const positions = targetPositionsForHit(hit, state.enemyCount);
@@ -347,14 +360,22 @@ function teamBuffs(data, members) {
 function buildTargetDistribution(hits) {
   const labels = new Map();
   const totals = new Map();
+  const parts = new Map();
   hits.forEach((hit) => {
     if (hit.position === undefined) return;
     labels.set(hit.position, targetLabel(hit.position));
-    totals.set(hit.position, (totals.get(hit.position) ?? 0) + hit.ability * hit.targets * hit.repeats);
+    const value = hit.ability * hit.targets * hit.repeats;
+    totals.set(hit.position, (totals.get(hit.position) ?? 0) + value);
+    const currentParts = parts.get(hit.position) ?? [];
+    currentParts.push({
+      label: hit.rowLabel,
+      multiplier: value,
+    });
+    parts.set(hit.position, currentParts);
   });
   return [...totals.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([position, multiplier]) => ({ position, label: labels.get(position), multiplier }));
+    .map(([position, multiplier]) => ({ position, label: labels.get(position), multiplier, parts: parts.get(position) ?? [] }));
 }
 
 function emptyBuffs() {
@@ -381,9 +402,27 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
     multipliers.mitigationMult *
     multipliers.brokenMult;
   const expectedMultiplierWithoutAtk = totalAbility * commonExpectedMultiplier;
-  const targetParts = buildTargetDistribution(hits).map((item) =>
+  const targetDistribution = buildTargetDistribution(hits);
+  const baselineMultipliers = baselineMultiplierSet(state);
+  const atkMultiplier = state.baseAtk > 0 ? state.finalAtk / state.baseAtk : 0;
+  const relativeMultipliers = {
+    atk: atkMultiplier,
+    dmgBoost: dmgBoost / 1,
+    expectedCrit: expectedCritMult,
+    defense: baselineMultipliers.defMult ? multipliers.defMult / baselineMultipliers.defMult : 0,
+    resistance: baselineMultipliers.resMult ? multipliers.resMult / baselineMultipliers.resMult : 0,
+    vulnerability: multipliers.vulnMult / baselineMultipliers.vulnMult,
+    weaken: baselineMultipliers.weakenMult ? multipliers.weakenMult / baselineMultipliers.weakenMult : 0,
+    mitigation: baselineMultipliers.mitigationMult ? multipliers.mitigationMult / baselineMultipliers.mitigationMult : 0,
+    broken: baselineMultipliers.brokenMult ? multipliers.brokenMult / baselineMultipliers.brokenMult : 0,
+  };
+  const relativeBaselineTotal = Object.values(relativeMultipliers).reduce((total, value) => total * value, 1);
+  const defensePlusTen = defenseMultiplierFor(state, state.defReduction + 10, state.defIgnore);
+  const defensePlusTenGain = multipliers.defMult > 0 ? defensePlusTen / multipliers.defMult - 1 : 0;
+  const targetParts = targetDistribution.map((item) =>
     part(`目標總覽：${item.label}`, percent(item.multiplier), "x", `${item.multiplier.toFixed(0)}%`),
   );
+  const targetFormula = targetDistribution.map((item) => `${item.multiplier.toFixed(0)}%`).join(" + ");
   const baseHitParts = summarizeHitRows(hits.filter((hit) => hit.rowLabel !== "解讀層數倍率")).map((item) =>
     part(`基礎命中：${item.label}`, item.value, "x", item.note),
   );
@@ -413,6 +452,7 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       parts: [
         part("角色基礎攻擊", state.characterBaseAtk),
         part("光錐基礎攻擊", state.lightConeBaseAtk),
+        part("基礎攻擊力", state.baseAtk, "", `${state.characterBaseAtk.toFixed(1)} + ${state.lightConeBaseAtk.toFixed(1)}`),
         part("主詞條攻擊%", state.atkParts.main, "%"),
         part("行跡攻擊%", state.atkParts.trace, "%"),
         part("隊伍/校正攻擊%", state.atkParts.team, "%"),
@@ -421,6 +461,9 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
         part("大黑塔終結技後攻擊 Buff", state.atkParts.ultimate, "%"),
         part("手部固定攻擊", state.handFlatAtk),
         part("副詞條固定攻擊", state.flatAtkFromRolls),
+        part("固定攻擊合計", state.flatAtk),
+        part("最終攻擊力", state.finalAtk, "", `${state.baseAtk.toFixed(1)} x (1 + ${state.atkPercent.toFixed(2)}%) + ${state.flatAtk.toFixed(1)}`),
+        part("攻擊力倍率", atkMultiplier, "x", "最終攻擊力 / 基礎攻擊力"),
       ],
     },
     {
@@ -428,8 +471,32 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       value: totalAbility,
       unit: "x",
       formula: "總倍率 = 各目標倍率總和",
-      detail: "詳細 hit 計算請看技能拆解；此處只保留可讀摘要。",
-      parts: [...targetParts, ...baseHitParts, ...interpretationParts],
+      detail: `${targetFormula} = ${(totalAbility * 100).toFixed(0)}% = ${totalAbility.toFixed(4)}x`,
+      parts: [
+        ...targetParts,
+        part("技能總倍率公式", totalAbility, "x", `${targetFormula} = ${(totalAbility * 100).toFixed(0)}%`),
+        ...baseHitParts,
+        ...interpretationParts,
+      ],
+    },
+    {
+      label: "相對基準總倍率",
+      value: relativeBaselineTotal,
+      unit: "x",
+      formula:
+        "攻擊力倍率 x 增傷相對倍率 x 暴擊期望倍率 x 防禦相對倍率 x 抗性相對倍率 x 易傷相對倍率 x 我方減傷相對倍率 x 敵方減傷相對倍率 x 弱點相對倍率",
+      detail: "以基準狀態作為 1.0000x 的比較值，不是遊戲公式中的原始乘區。",
+      parts: [
+        part("攻擊力倍率", relativeMultipliers.atk, "x", "最終攻擊力 / 基礎攻擊力"),
+        part("增傷相對倍率", relativeMultipliers.dmgBoost, "x", "目前增傷區 / 基準增傷區 1.0000"),
+        part("暴擊期望倍率", relativeMultipliers.expectedCrit, "x", "1 + 暴率 x 暴傷，暴率沿用上限處理"),
+        part("防禦相對倍率", relativeMultipliers.defense, "x", `目前 ${multipliers.defMult.toFixed(4)} / 基準 ${baselineMultipliers.defMult.toFixed(4)}`),
+        part("抗性相對倍率", relativeMultipliers.resistance, "x", `目前 ${multipliers.resMult.toFixed(4)} / 基準 ${baselineMultipliers.resMult.toFixed(4)}`),
+        part("易傷相對倍率", relativeMultipliers.vulnerability, "x", "目前易傷區 / 基準 1.0000"),
+        part("我方減傷相對倍率", relativeMultipliers.weaken, "x", "目前我方減傷區 / 基準 1.0000"),
+        part("敵方減傷相對倍率", relativeMultipliers.mitigation, "x", "目前敵方減傷區 / 基準 1.0000"),
+        part("弱點相對倍率", relativeMultipliers.broken, "x", `目前 ${multipliers.brokenMult.toFixed(4)} / 基準 ${baselineMultipliers.brokenMult.toFixed(4)}`),
+      ],
     },
     {
       label: "增傷區",
@@ -470,6 +537,11 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       formula: "(角色等級 + 20) / ((敵人等級 + 20) x (1 - 減防/無視) + 角色等級 + 20)",
       detail: `目前減防/無視 ${multipliers.defReductionTotal.toFixed(2)}%`,
       parts: [
+        part("實際防禦乘區", multipliers.defMult, "x", "此值直接進入傷害公式"),
+        part("基準防禦乘區", baselineMultipliers.defMult, "x", "同角色/敵人等級，無額外防禦降低與防禦無視"),
+        part("防禦相對倍率", relativeMultipliers.defense, "x", "目前防禦區 / 基準防禦區"),
+        part("目前配置作為邊際提升基準", 1, "x", "邊際提升參考以目前完整配置為 1.0000x"),
+        part("防禦降低 +10% 相對提升", defensePlusTenGain * 100, "%", `${defensePlusTen.toFixed(4)} / ${multipliers.defMult.toFixed(4)} - 1`),
         part("角色等級", state.characterLevel),
         part("敵人等級", state.enemyLevel),
         part("防禦降低", state.defReduction, "%"),
@@ -515,7 +587,12 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       unit: "x",
       formula: "已擊破 1 / 未擊破 0.9",
       detail: state.targetBroken ? "敵人已弱點擊破" : "敵人未弱點擊破",
-      parts: [part("弱點擊破狀態", multipliers.brokenMult, "x", state.targetBroken ? "已擊破" : "未擊破")],
+      parts: [
+        part("實際弱點乘區", multipliers.brokenMult, "x", "此值直接進入傷害公式"),
+        part("弱點相對倍率", relativeMultipliers.broken, "x", `目前 ${multipliers.brokenMult.toFixed(4)} / 基準 ${baselineMultipliers.brokenMult.toFixed(4)}`),
+        part("弱點擊破狀態", multipliers.brokenMult, "x", state.targetBroken ? "已擊破" : "未擊破"),
+        part("說明", 0, "note", "弱點區屬於戰鬥狀態乘區，保留於實際公式中，也可納入相對基準總倍率；但不列入邊際提升參考。"),
+      ],
     },
     {
       label: "通用乘區倍率",
@@ -546,6 +623,14 @@ function buildFactorSummary(state, hits, multipliers, dmgBoost, expectedCritMult
       ],
     },
   ];
+}
+
+function defenseMultiplierFor(state, defReduction, defIgnore) {
+  const defReductionTotal = clamp(Number(defReduction || 0) + Number(defIgnore || 0), 0, 100);
+  return (
+    (state.characterLevel + 20) /
+    ((state.enemyLevel + 20) * (1 - percent(defReductionTotal)) + state.characterLevel + 20)
+  );
 }
 
 function summarizeHitRows(hits) {

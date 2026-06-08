@@ -250,8 +250,25 @@ export function createUI(data) {
       <details class="breakdown-section target-overview" open>
         <summary>目標總覽</summary>
         <div class="target-distribution">
-          ${distribution.map((item) => `<span><strong>${escapeHtml(item.label)}</strong>${item.multiplier.toFixed(0)}%</span>`).join("")}
+          ${distribution.map(renderTargetChip).join("")}
         </div>
+      </details>
+    `;
+  }
+
+  function renderTargetChip(item) {
+    return `
+      <details class="target-chip">
+        <summary>
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${item.multiplier.toFixed(0)}%</span>
+        </summary>
+        <ul>
+          ${(item.parts ?? [])
+            .map((part) => `<li><span>${escapeHtml(part.label)}</span><strong>${part.multiplier.toFixed(0)}%</strong></li>`)
+            .join("")}
+          <li class="target-total"><span>合計</span><strong>${item.multiplier.toFixed(0)}%</strong></li>
+        </ul>
       </details>
     `;
   }
@@ -328,8 +345,9 @@ export function createUI(data) {
     candidates.sort((a, b) => b.gain - a.gain);
     const top = candidates[0];
     document.getElementById("configInsight").textContent =
-      `單步提升比較：${top.label} 約增加 ${top.gain.toFixed(2)}%。` +
-      "這只是以當前面板做單步配置比較，不代表已執行最佳化器。";
+      `以下比較是以目前完整配置作為 1.0000x 基準，單獨增加或切換一項可配置變數後的相對提升。` +
+      `目前最高單步項目：${top.label} 約增加 ${top.gain.toFixed(2)}%。` +
+      "這不是最佳化器，也不代表已搜尋所有配置。";
 
     document.getElementById("marginalTable").innerHTML = candidates
       .slice(0, 4)
@@ -349,12 +367,29 @@ export function createUI(data) {
             </summary>
             <div class="factor-body">
               <p>${escapeHtml(factor.formula)}${factor.detail ? `：${escapeHtml(factor.detail)}` : ""}</p>
+              ${renderFactorHelp(factor)}
               ${renderFactorParts(factor.parts)}
             </div>
           </details>
         `,
       )
       .join("");
+  }
+
+  function renderFactorHelp(factor) {
+    if (factor.label === "相對基準總倍率") {
+      return `<p class="factor-note">相對基準總倍率是以基準狀態作為 1.0000x 的比較值，不是遊戲公式中的原始乘區。</p>`;
+    }
+    if (factor.label === "防禦區") {
+      return `<p class="factor-note">防禦區顯示的是實際公式乘區，例如 0.4651x 會直接進入傷害公式。防禦相對倍率是目前防禦區 / 基準防禦區；邊際提升參考中的防禦降低 +10% 是相對於目前配置的提升，不是直接把防禦區加 10%。</p>`;
+    }
+    if (factor.label === "弱點區") {
+      return `<p class="factor-note">弱點區屬於戰鬥狀態乘區，保留於實際公式中，也可納入相對基準總倍率；但不列入邊際提升參考。</p>`;
+    }
+    if (factor.label === "通用乘區倍率") {
+      return `<p class="factor-note">實際公式乘區會直接進入傷害公式；邊際提升參考則是用新期望傷害 / 原期望傷害 - 1 觀察單步變動。</p>`;
+    }
+    return "";
   }
 
   function renderFactorParts(parts = []) {
@@ -385,6 +420,7 @@ export function createUI(data) {
 
   function formatPartValue(item) {
     const value = Number(item.value || 0);
+    if (item.unit === "note") return "";
     if (item.unit === "%") return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
     if (item.unit === "x") return `${value.toFixed(4)}x`;
     return value.toFixed(1);
